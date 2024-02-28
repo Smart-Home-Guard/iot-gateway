@@ -19,16 +19,26 @@ AIO_FEED_ID = ["smarthomeguard.shg-lpg", "smarthomeguard.shg-fire", "smarthomegu
 AIO_USERNAME = "atfox272"
 AIO_KEY = "aio_AiZy57V7CqYlDC4SzEMIeKvXoYMQ"
 
-SHG_LPG_ID = indices = [index for index, element in enumerate(AIO_FEED_ID) if "lpg" in element]
-SHG_LPG_FIRE = [index for index, element in enumerate(AIO_FEED_ID) if "fire" in element]
+SHG_LPG_ID = [index for index, element in enumerate(AIO_FEED_ID) if "shg-lpg" in element][0]
+SHG_FIRE_ID = [index for index, element in enumerate(AIO_FEED_ID) if "shg-fire" in element][0]
+SHG_CO_ID = [index for index, element in enumerate(AIO_FEED_ID) if "shg-co" in element][0]
+SHG_SMOKE_ID = [index for index, element in enumerate(AIO_FEED_ID) if "shg-smoke" in element][0]
+SHG_HEAT_ID = [index for index, element in enumerate(AIO_FEED_ID) if "shg-heat" in element][0]
+SHG_ALERT_FIRE_ID = [index for index, element in enumerate(AIO_FEED_ID) if "shg-alert-fire" in element][0]
+SHG_ALERT_CO_ID = [index for index, element in enumerate(AIO_FEED_ID) if "shg-alert-co" in element][0]
+SHG_ALERT_LPG_ID = [index for index, element in enumerate(AIO_FEED_ID) if "shg-alert-lpg" in element][0]
+SHG_ALERT_SMOKE_ID = [index for index, element in enumerate(AIO_FEED_ID) if "shg-alert-smoke" in element][0]
+SHG_ALERT_HEAT_ID = [index for index, element in enumerate(AIO_FEED_ID) if "shg-alert-heat" in element][0]
+
 
 # Node configuration
-## Message Format
+# Message Format
 NODE_ID_IDX = 0
 NODE_COMPONENT_IDX = 1
 NODE_VALUE_IDX = 2
 NODE_ALERT_IDX = 3
 NODE_STATUS_IDX = 4
+
 
 def connected(client):
     print("Connected")
@@ -112,16 +122,26 @@ def processData(data):
     node_alert = splitData[NODE_ALERT_IDX]
     node_status = splitData[NODE_STATUS_IDX]
     # Decode value
-    real_value = decodeNodeValue(int(node_value), node_component)
-    server_command = node_id + ':' + node_component + ':' + str(real_value) + ':' + node_alert + ':' + node_status
+    real_value = str(decodeNodeValue(int(node_value), node_component))
+    server_command = node_id + ':' + node_component + ':' + real_value + ':' + node_alert + ':' + node_status
     print("Command to server: " + server_command)
-    if int(node_alert) == 0:
-        if splitData[1] == "LPG":
-            client.publish("smarthomeguard.shg-lpg", real_value)
-        elif splitData[1] == "FIRE":
-            client.publish("smarthomeguard.shg-fire", real_value)
-    else:
-        client.publish("smarthomeguard.shg-alert", real_value)
+
+    if node_component == "LPG":
+        client.publish(AIO_FEED_ID[SHG_LPG_ID], real_value)
+        client.publish(AIO_FEED_ID[SHG_ALERT_LPG_ID], node_alert)
+    elif node_component == "FIRE":
+        client.publish(AIO_FEED_ID[SHG_FIRE_ID], real_value)
+        client.publish(AIO_FEED_ID[SHG_ALERT_FIRE_ID], node_alert)
+    elif node_component == "SMOKE":
+        client.publish(AIO_FEED_ID[SHG_SMOKE_ID], real_value)
+        client.publish(AIO_FEED_ID[SHG_ALERT_SMOKE_ID], node_alert)
+    elif node_component == "HEAT":
+        client.publish(AIO_FEED_ID[SHG_HEAT_ID], real_value)
+        client.publish(AIO_FEED_ID[SHG_ALERT_HEAT_ID], node_alert)
+    elif node_component == "CO":
+        client.publish(AIO_FEED_ID[SHG_CO_ID], real_value)
+        client.publish(AIO_FEED_ID[SHG_ALERT_CO_ID], node_alert)
+
 
 
 
