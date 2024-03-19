@@ -426,7 +426,7 @@ def readSerial():
 
 
 # Connect segment (Nodes Interface)
-ser = serial.Serial(port="COM3", baudrate=115200) # COM17 - COM15
+ser = serial.Serial(port="COM17", baudrate=115200) # COM17 - COM15
 
 while True:
     readSerial()
