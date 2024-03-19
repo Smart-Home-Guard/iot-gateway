@@ -396,7 +396,7 @@ def processData(data):
 
     # Post-MQTTTransmission process (DO NOT IMPLEMENT THIS CASE)
 
-    # real_value = str(decodeNodeValue(int(node_value), node_component))
+    # real_value = str(decodeNodeValue(in   t  (node_value), node_component))
     # server_command = node_id + ':' + node_component + ':' + real_value
     # print("Command to server: " + server_command)
     # if node_component == "LPG":
