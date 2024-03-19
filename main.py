@@ -260,7 +260,7 @@ def processData(data):
         # Parser
         co_str = node_value[0]
         alert_light_value = int(node_value[1])
-        alert_buzzer_value = int(node_value[2])
+        # alert_buzzer_value = int(node_value[2])
         # Decoder
         # co_value = int(''.join(map(str, [ord(char) for char in co_str])))
         co_value = decodeNodeValue(int(co_str), COMP_CO_ENC)
@@ -288,7 +288,7 @@ def processData(data):
         # Parser
         lpg_str = node_value[0]
         alert_light_value = int(node_value[1])
-        alert_buzzer_value = int(node_value[2])
+        # alert_buzzer_value = int(node_value[2])
         # Decoder
         # lpg_value = int(''.join(map(str, [ord(char) for char in lpg_str])))
         lpg_value = decodeNodeValue(int(lpg_str), COMP_LPG_ENC)
@@ -318,7 +318,7 @@ def processData(data):
         fire_str = node_value[2]
         alert_smoke_light_value = int(node_value[3])
         alert_fire_light_value = int(node_value[4])
-        alert_buzzer_value = int(node_value[5])
+        # alert_buzzer_value = int(node_value[5])
         # Decoder
         # smoke_value = int(''.join(map(str, [ord(char) for char in smoke_str])))
         smoke_value = decodeNodeValue(int(smoke_str), COMP_SMOKE_ENC)
