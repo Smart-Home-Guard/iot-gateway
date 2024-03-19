@@ -140,6 +140,8 @@ mess = ""
 def decodeNodeValue(node_value, component_enc):
     if component_enc == COMP_LPG_ENC:
         # Node's value = voltage / 100
+        if node_value < 110:
+            node_value = 110
         voltage = node_value / 100
         # Parts Per Million = ln((voltage - 4.5) / (-3.5)) / (-0.0005)
         ppm = math.log((voltage - 4.5) / (-3.4)) / (-0.0005)
@@ -273,8 +275,8 @@ def processData(data):
         if co_value >= FEED_CO_THRESHOLD:
             alert_light_value = 1
             alert_buzzer_value = 1
-            # !1:0:1:1#
-            cmd_to_node = "!" + str(1) + ":" + str(0) + ":" + str(1) + ":" + str(1) + "#"
+            # !1:0:1#
+            cmd_to_node = "!" + str(1) + ":" + str(0) + ":" + str(1) + "#"
             ser.write(cmd_to_node.encode('utf-8'))
 
         ######################################################
@@ -301,8 +303,8 @@ def processData(data):
         if lpg_value >= FEED_LPG_THRESHOLD:
             alert_light_value = 1
             alert_buzzer_value = 1
-            # !1:1:1:1#
-            cmd_to_node = "!" + str(1) + ":" + str(1) + ":" + str(1) + ":" + str(1) + "#"
+            # !1:1:1#
+            cmd_to_node = "!" + str(1) + ":" + str(1) + ":" + str(1) + "#"
             ser.write(cmd_to_node.encode('utf-8'))
 
         ######################################################
@@ -346,7 +348,7 @@ def processData(data):
         # if heat_value >= FEED_HEAT_THRESHOLD:
         #     alert_buzzer_value = 1
         # !1:2:1:1:1#
-        cmd_to_node = "!" + "1" + ":" + "2" + ":" + str(alert_smoke_light_value) + ":" + str(alert_fire_light_value) + ":" + str(alert_buzzer_value) + "#"
+        cmd_to_node = "!" + "1" + ":" + "2" + ":" + str(alert_smoke_light_value) + ":" + str(alert_fire_light_value) + "#"
         if alert_fire_light_value | alert_smoke_light_value:
             ser.write(cmd_to_node.encode('utf-8'))
         ######################################################
@@ -361,8 +363,8 @@ def processData(data):
     elif(node_device_id == AlertButtonEnum):
         # Parser
         button_str = node_value[0]
-        alert_light_value = int(node_value[1])
-        alert_buzzer_value = int(node_value[2])
+        # alert_light_value = int(node_value[1])
+        alert_buzzer_value = int(node_value[1])
         # Decoder
         # button_value = int(''.join(map(str, [ord(char) for char in button_str])))
         button_value = int(button_str)
@@ -377,7 +379,7 @@ def processData(data):
             alert_light_value = 1
             alert_buzzer_value = 1
             # !1:1:1:1#
-            cmd_to_node = "!" + str(1) + ":" + str(3) + ":" + str(1) + ":" + str(1) + "#"
+            cmd_to_node = "!" + str(1) + ":" + str(3) + ":" + str(1) + "#"
             ser.write(cmd_to_node.encode('utf-8'))
         else:
             alert_light_value = 0
