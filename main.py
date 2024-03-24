@@ -11,7 +11,9 @@ import serial.tools.list_ports
 import math
 
 from Adafruit_IO import MQTTClient
-
+import paho.mqtt.client
+import paho.mqtt.client as mqtt
+import json
 
 AIO_FEED_ID = ["smarthomeguard.shg-lpg",
                "smarthomeguard.shg-fire",
@@ -62,10 +64,10 @@ COMP_BUZZER_ENC = 6
 COMP_BTN_ENC = 7
 # Alert threshold
 FEED_LPG_THRESHOLD = 1000       # ppm
-FEED_CO_THRESHOLD = 3.0         # ppm
-FEED_HEAT_THRESHOLD = 3.0       # C/s
-FEED_SMOKE_THRESHOLD = 3.0      #
-FEED_FIRE_THRESHOLD = 3.0       # lux
+FEED_CO_THRESHOLD = 100         # ppm
+# FEED_HEAT_THRESHOLD = 3.0     # C/s
+FEED_SMOKE_THRESHOLD = 1000      #
+FEED_FIRE_THRESHOLD = 2.5       # lux
 # Alert level
 FEED_LPG_ALERT_HIGH = 1
 FEED_LPG_ALERT_LOW = 0
@@ -108,16 +110,21 @@ def message(client , feed_id , payload):
     ser.write((str(payload) + "#").encode())
 
 
+# Connect segment
+## Adafruit Interface
 client = MQTTClient(AIO_USERNAME, AIO_KEY)
 client.on_connect = connected
 client.on_disconnect = disconnected
 client.on_message = message
-# client.on_subscribe = subscribe
-
-# Connect segment (Sever Interface)
 client.connect()
-
 client.loop_background()
+
+## IoT Server todo
+# client_id = ''
+# mqtt_client = mqtt.Client(mqtt.client.CallbackAPIVersion.VERSION1, client_id)
+# mqtt_client.connect('test.mosquitto.org')
+#
+# mqtt_client.loop_start()
 
 
 def getPort():
@@ -149,18 +156,18 @@ def decodeNodeValue(node_value, component_enc):
     elif component_enc == COMP_CO_ENC:
         # Node's value = voltage * 50
         voltage = node_value / 100
-
+        ppm = math.log((voltage - 4.5) / (-3.4)) / (-0.0011)
         return voltage
     elif component_enc == COMP_FIRE_ENC:
         # Node's value = voltage * 50
         voltage = node_value / 100
-
-        return voltage
+        ppm = 5 - voltage
+        return ppm
     elif component_enc == COMP_SMOKE_ENC:
         # Node's value = voltage * 50
         voltage = node_value / 100
-
-        return voltage
+        ppm = math.log((voltage - 3.4) / (-2.3)) / (-0.0025)
+        return ppm
     elif component_enc == COMP_HEAT_ENC:
         # Node's value = voltage * 50
         voltage = node_value / 100
@@ -247,7 +254,6 @@ def processData(data):
     for i in range(len(splitData) - NODE_VALUE_1_IDX): #
         node_value[i] = splitData[NODE_VALUE_1_IDX + i]
 
-    print(node_value)
     # Pre-MQTTTransmission process (Decoder + Package Data)
     co_value = 0
     lpg_value = 0
@@ -278,13 +284,16 @@ def processData(data):
             # !1:0:1#
             cmd_to_node = "!" + str(1) + ":" + str(0) + ":" + str(1) + "#"
             ser.write(cmd_to_node.encode('utf-8'))
-
+            print("MSG to Node (CO):\t\t\t", cmd_to_node)
+        # Debugger
+        print("CO: ", co_value)
         ######################################################
         # Package
         client.publish(AIO_FEED_ID[SHG_CO_ID], co_value)
         # client.publish(AIO_FEED_ID[SHG_CO_ALERT_ID], alert_light_value)
-        client.publish(AIO_FEED_ID[SHG_ALERT_LIGHT_ID], alert_light_value)
-        client.publish(AIO_FEED_ID[SHG_ALERT_BUZZER_ID], alert_buzzer_value)
+        # if alert_light_value >= 0:
+        #     client.publish(AIO_FEED_ID[SHG_ALERT_LIGHT_ID], alert_light_value)
+        #     client.publish(AIO_FEED_ID[SHG_ALERT_BUZZER_ID], alert_buzzer_value)
 
     elif node_device_id == LpgDetectionEnum:
         # Parser
@@ -294,6 +303,7 @@ def processData(data):
         # Decoder
         # lpg_value = int(''.join(map(str, [ord(char) for char in lpg_str])))
         lpg_value = decodeNodeValue(int(lpg_str), COMP_LPG_ENC)
+
         # Backend simulator ##################################
         # todo: Is value is over the threshold
         # True ->
@@ -306,13 +316,16 @@ def processData(data):
             # !1:1:1#
             cmd_to_node = "!" + str(1) + ":" + str(1) + ":" + str(1) + "#"
             ser.write(cmd_to_node.encode('utf-8'))
+            print("MSG to Node (LPG alert):\t\t\t", cmd_to_node)
 
+        # Debugger ###########################################
+        print("LPG: ", lpg_value)
         ######################################################
         # Package
         client.publish(AIO_FEED_ID[SHG_LPG_ID], lpg_value)
         # client.publish(AIO_FEED_ID[SHG_LPG_ALERT_ID], alert_light_value)
-        client.publish(AIO_FEED_ID[SHG_ALERT_LIGHT_ID], alert_light_value)
-        client.publish(AIO_FEED_ID[SHG_ALERT_BUZZER_ID], alert_buzzer_value)
+        # client.publish(AIO_FEED_ID[SHG_ALERT_LIGHT_ID], alert_light_value)
+        # client.publish(AIO_FEED_ID[SHG_ALERT_BUZZER_ID], alert_buzzer_value)
     elif node_device_id == FireDetectionEnum:
         # Parser
         smoke_str = node_value[0]
@@ -342,8 +355,11 @@ def processData(data):
         if fire_value >= FEED_FIRE_THRESHOLD:
             alert_fire_light_value = 1
             alert_buzzer_value = 1
-        print(smoke_value)
-        print(fire_value)
+        # Debugger #####################
+        print("SMOKE: ", smoke_value)
+        print("FIRE: ", fire_value)
+        print("HEAT: ", heat_value)
+        ################################
         # Do not alert when temperature is come over THRESHOLD
         # if heat_value >= FEED_HEAT_THRESHOLD:
         #     alert_buzzer_value = 1
@@ -351,6 +367,7 @@ def processData(data):
         cmd_to_node = "!" + "1" + ":" + "2" + ":" + str(alert_smoke_light_value) + ":" + str(alert_fire_light_value) + "#"
         if alert_fire_light_value | alert_smoke_light_value:
             ser.write(cmd_to_node.encode('utf-8'))
+            print("MSG to Node (FIRE/SMOKE alert):\t\t", cmd_to_node)
         ######################################################
         # Package
         client.publish(AIO_FEED_ID[SHG_SMOKE_ID], smoke_value)
@@ -358,8 +375,9 @@ def processData(data):
         client.publish(AIO_FEED_ID[SHG_HEAT_ID], heat_value)
         # client.publish(AIO_FEED_ID[SHG_SMOKE_ALERT_ID], alert_smoke_light_value)
         # client.publish(AIO_FEED_ID[SHG_FIRE_ALERT_ID], alert_fire_light_value)
-        client.publish(AIO_FEED_ID[SHG_ALERT_LIGHT_ID], (alert_fire_light_value | alert_smoke_light_value))
-        client.publish(AIO_FEED_ID[SHG_ALERT_BUZZER_ID], alert_buzzer_value)
+        # if alert_fire_light
+        # client.publish(AIO_FEED_ID[SHG_ALERT_LIGHT_ID], (alert_fire_light_value | alert_smoke_light_value))
+        # client.publish(AIO_FEED_ID[SHG_ALERT_BUZZER_ID], alert_buzzer_value)
     elif(node_device_id == AlertButtonEnum):
         # Parser
         button_str = node_value[0]
@@ -381,12 +399,16 @@ def processData(data):
             # !1:1:1:1#
             cmd_to_node = "!" + str(1) + ":" + str(3) + ":" + str(1) + "#"
             ser.write(cmd_to_node.encode('utf-8'))
+            print("MSG to Node (BUTTON):\t\t\t", cmd_to_node)
         else:
             alert_light_value = 0
             alert_buzzer_value = 0
             # !1:1:1:1#
             cmd_to_node = "!" + str(1) + ":" + str(3) + ":" + str(0) + ":" + str(0) + "#"
             ser.write(cmd_to_node.encode('utf-8'))
+            print("MSG to Node (BUTTON):\t\t", cmd_to_node)
+        # Debugger #########################################
+        print("BUTTON: ", button_value)
         ######################################################
         # Package
         client.publish(AIO_FEED_ID[SHG_ALERT_BUTTON_ID], button_value)
@@ -396,7 +418,7 @@ def processData(data):
 
     # Post-MQTTTransmission process (DO NOT IMPLEMENT THIS CASE)
 
-    # real_value = str(decodeNodeValue(in   t  (node_value), node_component))
+    # real_value = str(decodeNodeValue(int(node_value), node_component))
     # server_command = node_id + ':' + node_component + ':' + real_value
     # print("Command to server: " + server_command)
     # if node_component == "LPG":
