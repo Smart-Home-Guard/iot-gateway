@@ -11,8 +11,6 @@ import serial.tools.list_ports
 import math
 
 from Adafruit_IO import MQTTClient
-import paho.mqtt.client
-import paho.mqtt.client as mqtt
 import json
 
 AIO_FEED_ID = ["smarthomeguard.shg-lpg",
@@ -121,9 +119,8 @@ client.loop_background()
 
 ## IoT Server todo
 # client_id = ''
-# mqtt_client = mqtt.Client(mqtt.client.CallbackAPIVersion.VERSION1, client_id)
+# mqtt_client = mqtt.Client(client_id)
 # mqtt_client.connect('test.mosquitto.org')
-#
 # mqtt_client.loop_start()
 
 
@@ -450,7 +447,7 @@ def readSerial():
 
 
 # Connect segment (Nodes Interface)
-ser = serial.Serial(port="COM17", baudrate=115200) # COM17 - COM15
+ser = serial.Serial(port = "COM17", baudrate = 115200) # COM17 - COM15
 
 while True:
     readSerial()
