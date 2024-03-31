@@ -9,7 +9,7 @@ import random
 import serial
 import serial.tools.list_ports
 import math
-
+import requests
 from Adafruit_IO import MQTTClient
 import json
 
@@ -61,7 +61,7 @@ COMP_LIGHT_ENC = 5
 COMP_BUZZER_ENC = 6
 COMP_BTN_ENC = 7
 # Alert threshold
-FEED_LPG_THRESHOLD = 1000       # ppm
+FEED_LPG_THRESHOLD = 3800       # ppm
 FEED_CO_THRESHOLD = 100         # ppm
 # FEED_HEAT_THRESHOLD = 3.0     # C/s
 FEED_SMOKE_THRESHOLD = 1000      #
@@ -149,27 +149,32 @@ def decodeNodeValue(node_value, component_enc):
         voltage = node_value / 100
         # Parts Per Million = ln((voltage - 4.5) / (-3.5)) / (-0.0005)
         ppm = math.log((voltage - 4.5) / (-3.4)) / (-0.0005)
-        return ppm
+        ppm = 0 if ppm < 0 else ppm
+        return round(ppm, 2)
     elif component_enc == COMP_CO_ENC:
         # Node's value = voltage * 50
         voltage = node_value / 100
         ppm = math.log((voltage - 4.5) / (-3.4)) / (-0.0011)
-        return voltage
+        ppm = 0 if ppm < 0 else ppm
+        return round(ppm, 2)
     elif component_enc == COMP_FIRE_ENC:
         # Node's value = voltage * 50
         voltage = node_value / 100
         ppm = 5 - voltage
-        return ppm
+        ppm = 0 if ppm < 0 else ppm
+        return round(ppm, 2)
     elif component_enc == COMP_SMOKE_ENC:
         # Node's value = voltage * 50
         voltage = node_value / 100
         ppm = math.log((voltage - 3.4) / (-2.3)) / (-0.0025)
-        return ppm
+        ppm = 0 if ppm < 0 else ppm
+        return round(ppm, 2)
     elif component_enc == COMP_HEAT_ENC:
         # Node's value = voltage * 50
         voltage = node_value / 100
-
-        return voltage
+        ppm = voltage
+        ppm = 0 if ppm < 0 else ppm
+        return round(ppm, 2)
     else:
         return node_value
 
@@ -238,6 +243,7 @@ def decodeNodeValue(node_value, component_enc):
     #     client.publish(AIO_FEED_ID[SHG_ALERT_CO_ID], node_alert)
 
 # def preMQTTTransmission(device_id, node_value):
+last_button_data = 0
 
 
 def processData(data):
@@ -281,7 +287,7 @@ def processData(data):
             # !1:0:1#
             cmd_to_node = "!" + str(1) + ":" + str(0) + ":" + str(1) + "#"
             ser.write(cmd_to_node.encode('utf-8'))
-            print("MSG to Node (CO):\t\t\t", cmd_to_node)
+            # print("MSG to Node (CO):\t\t\t", cmd_to_node)
         # Debugger
         print("CO: ", co_value)
         ######################################################
@@ -313,7 +319,7 @@ def processData(data):
             # !1:1:1#
             cmd_to_node = "!" + str(1) + ":" + str(1) + ":" + str(1) + "#"
             ser.write(cmd_to_node.encode('utf-8'))
-            print("MSG to Node (LPG alert):\t\t\t", cmd_to_node)
+            # print("MSG to Node (LPG alert):\t\t\t", cmd_to_node)
 
         # Debugger ###########################################
         print("LPG: ", lpg_value)
@@ -334,7 +340,6 @@ def processData(data):
         # Decoder
         # smoke_value = int(''.join(map(str, [ord(char) for char in smoke_str])))
         smoke_value = decodeNodeValue(int(smoke_str), COMP_SMOKE_ENC)
-
         # heat_value = int(''.join(map(str, [ord(char) for char in heat_str])))
         heat_value = decodeNodeValue(int(heat_str), COMP_HEAT_ENC)
 
@@ -364,7 +369,7 @@ def processData(data):
         cmd_to_node = "!" + "1" + ":" + "2" + ":" + str(alert_smoke_light_value) + ":" + str(alert_fire_light_value) + "#"
         if alert_fire_light_value | alert_smoke_light_value:
             ser.write(cmd_to_node.encode('utf-8'))
-            print("MSG to Node (FIRE/SMOKE alert):\t\t", cmd_to_node)
+            # print("MSG to Node (FIRE/SMOKE alert):\t\t", cmd_to_node)
         ######################################################
         # Package
         client.publish(AIO_FEED_ID[SHG_SMOKE_ID], smoke_value)
@@ -382,6 +387,7 @@ def processData(data):
         alert_buzzer_value = int(node_value[1])
         # Decoder
         # button_value = int(''.join(map(str, [ord(char) for char in button_str])))
+        global last_button_data
         button_value = int(button_str)
         # button_value = decodeNodeValue(lpg_value, COMP_LPG_ENC)
         # Backend simulator ##################################
@@ -390,20 +396,28 @@ def processData(data):
         #           alert_light_value <- 1;
         #           alert_buzzer_value <- 1;
         #           -> Resend to Node controller (alert)
-        if button_value >= 1:
-            alert_light_value = 1
-            alert_buzzer_value = 1
+        if last_button_data != button_value:
+            alert_light_value = button_value
+            alert_buzzer_value = button_value
             # !1:1:1:1#
-            cmd_to_node = "!" + str(1) + ":" + str(3) + ":" + str(1) + "#"
+            cmd_to_node = "!" + str(1) + ":" + str(3) + ":" + str(button_value) + "#"
+            last_button_data = button_value
             ser.write(cmd_to_node.encode('utf-8'))
-            print("MSG to Node (BUTTON):\t\t\t", cmd_to_node)
-        else:
-            alert_light_value = 0
-            alert_buzzer_value = 0
-            # !1:1:1:1#
-            cmd_to_node = "!" + str(1) + ":" + str(3) + ":" + str(0) + ":" + str(0) + "#"
-            ser.write(cmd_to_node.encode('utf-8'))
-            print("MSG to Node (BUTTON):\t\t", cmd_to_node)
+            # print("MSG to Node (BUTTON):\t\t\t", cmd_to_node)
+        # if button_value >= 1:
+        #     alert_light_value = 1
+        #     alert_buzzer_value = 1
+        #     # !1:1:1:1#
+        #     cmd_to_node = "!" + str(1) + ":" + str(3) + ":" + str(1) + "#"
+        #     ser.write(cmd_to_node.encode('utf-8'))
+        #     # print("MSG to Node (BUTTON):\t\t\t", cmd_to_node)
+        # else:
+        #     alert_light_value = 0
+        #     alert_buzzer_value = 0
+        #     # # !1:1:1:1#
+        #     # cmd_to_node = "!" + str(1) + ":" + str(3) + ":" + str(0) + ":" + str(0) + "#"
+        #     # ser.write(cmd_to_node.encode('utf-8'))
+        #     # print("MSG to Node (BUTTON):\t\t", cmd_to_node)
         # Debugger #########################################
         print("BUTTON: ", button_value)
         ######################################################
@@ -446,10 +460,39 @@ def readSerial():
                 mess = mess[end+1:]
 
 
+last_sync_time = ''
+
+
+def syncButtonData():
+    headers = {
+        'X-AIO-Key': AIO_KEY
+    }
+    response = requests.get(
+        'https://io.adafruit.com/api/v2/atfox272/feeds/smarthomeguard.shg-alert-button/data',
+        headers = headers,
+        params = {'limit': 1}
+    )
+    global last_button_data
+    button_data = response.json()[0]['value']
+    # button_start_time = response.json()[0]['created_at']
+    cmd_to_node = "!" + str(1) + ":" + str(3) + ":" + str(button_data) + "#"
+    ser.write(cmd_to_node.encode('utf-8'))
+    # Update Adafruit server (Adafruit's rate limit is 30 requests)
+    if button_data != last_button_data: # Switching
+        client.publish(AIO_FEED_ID[SHG_ALERT_LIGHT_ID], button_data)
+        client.publish(AIO_FEED_ID[SHG_ALERT_BUZZER_ID], button_data)
+        print('Light:', button_data)
+        print('Button:', button_data)
+        print('Last Button:', last_button_data)
+        last_button_data = button_data
+
+
 # Connect segment (Nodes Interface)
 ser = serial.Serial(port = "COM17", baudrate = 115200) # COM17 - COM15
 
 while True:
     readSerial()
+    # syncButtonData()
     time.sleep(1)
+
 
