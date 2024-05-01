@@ -1,9 +1,9 @@
 {
-  "fire-alert-device": [
+  "fire-alert-devices": [
     {
       "co": [
         {
-          "feed_id": "None",
+          "feed_id": "smarthomeguard.shg-co",
           "sensor_id": 0,
           "component_id": 3,
           "processed_data_threshold": -1
@@ -11,7 +11,7 @@
       ],
       "fire": [
         {
-          "feed_id": "None",
+          "feed_id": "smarthomeguard.shg-fire",
           "sensor_id": 0,
           "component_id": 3,
           "processed_data_threshold": -1
@@ -19,7 +19,7 @@
       ],
       "smoke": [
         {
-          "feed_id": "None",
+          "feed_id": "smarthomeguard.shg-smoke",
           "sensor_id": 0,
           "component_id": 3,
           "processed_data_threshold": -1
@@ -27,33 +27,15 @@
       ],
       "heat": [
         {
-          "feed_id": "None",
+          "feed_id": "smarthomeguard.shg-heat",
           "sensor_id": 0,
           "component_id": 3,
           "processed_data_threshold": -1
         }
       ],
-      "button": [
-        {
-          "feed_id": "None",
-          "device_id": 0,
-          "component_id": 3
-        }
-      ],
-      "light": [
-        {
-          "feed_id": "None",
-          "device_id": 0,
-          "component_id": 3
-        }
-      ]
-    }
-  ],
-  "lpg-alert-device": [
-    {
       "lpg": [
         {
-          "feed_id": "None",
+          "feed_id": "smarthomeguard.shg-lpg",
           "sensor_id": 0,
           "component_id": 3,
           "processed_data_threshold": -1
@@ -68,14 +50,21 @@
       ],
       "light": [
         {
-          "feed_id": "None",
+          "feed_id": "smarthomeguard.shg-fire-alert",
+          "device_id": 0,
+          "component_id": 3
+        }
+      ],
+      "buzzer": [
+        {
+          "feed_id": "smarthomeguard.shg-fire-alert",
           "device_id": 0,
           "component_id": 3
         }
       ]
     }
   ],
-  "alert-device": [
+  "alert-devices": [
     {
       "button": [
         {
@@ -87,6 +76,13 @@
       "light": [
         {
           "feed_id": "None",
+          "device_id": 0,
+          "component_id": 3
+        }
+      ],
+      "buzzer": [
+        {
+          "feed_id": "",
           "device_id": 0,
           "component_id": 3
         }

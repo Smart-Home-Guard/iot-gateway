@@ -1,21 +1,25 @@
 from SensorComponent import *
+from ButtonComponent import *
+from OutputComponent import *
 
 
 class FireAlertDevice:
     def __init__(self, device_id=None,
-                 co_sensor=None,
-                 fire_sensor=None,
-                 heat_sensor=None,
-                 smoke_sensor=None,
-                 button_component=None,
-                 light_component=None):
+                 co_sensor=SensorComponent(),
+                 fire_sensor=SensorComponent(),
+                 heat_sensor=SensorComponent(),
+                 smoke_sensor=SensorComponent(),
+                 button_component=ButtonComponent(),
+                 light_component=OutputComponent(),
+                 buzzer_component=OutputComponent()):
         self.device_id = device_id
-        self.co_sensor = co_sensor        # 1 component
-        self.fire_sensor = fire_sensor    # 1 component
-        self.heat_sensor = heat_sensor    # 1 component
-        self.smoke_sensor = smoke_sensor        # 1 component
-        self.button_component = button_component              # 1 component
-        self.light_component = light_component                # 1 component
+        self.co_sensor = co_sensor                  # 1 component
+        self.fire_sensor = fire_sensor              # 1 component
+        self.heat_sensor = heat_sensor              # 1 component
+        self.smoke_sensor = smoke_sensor            # 1 component
+        self.button_component = button_component    # 1 component
+        self.light_component = light_component      # 1 component
+        self.buzzer_component = buzzer_component    # 1 component
         self.status = 'safe'    # Todo: 'safe'/'dangerous-0'/'dangerous-2'/'dangerous-3'
 
     # Get attr ###############################################
@@ -37,20 +41,34 @@ class FireAlertDevice:
     def get_light_list(self):
         return self.light_component
 
-    def get_prev_status(self):
+    def get_status(self):
         return self.status
 
-    def get_cur_status(self):
-        self.update_status()
-        return self.status
+    def get_metrics(self):
+        co_sensor_dict = self.co_sensor.get_metrics()
+        fire_sensor_dict = self.fire_sensor.get_metrics()
+        heat_sensor_dict = self.heat_sensor.get_metrics()
+        smoke_sensor_dict = self.smoke_sensor.get_metrics()
+        fire_alert_device_dict = {
+            'co': [co_sensor_dict],
+            'fire': [fire_sensor_dict],
+            'heat': [heat_sensor_dict],
+            'smoke': [smoke_sensor_dict]
+            # todo: Thêm button, light, buzzer
+        }
+        return
     ##########################################################
 
     # Update data ############################################
-    def update_status(self):
-        co_sensor_value = self.co_sensor.get_new_processed_data()
-        fire_sensor_value = self.fire_sensor.get_new_processed_data()
-        heat_sensor_value = self.heat_sensor.get_new_processed_data()
-        smoke_sensor_value = self.smoke_sensor.get_new_processed_data()
+    def update_all_data(self):
+        self.co_sensor.update_new_data()
+        self.fire_sensor.update_new_data()
+        self.heat_sensor.update_new_data()
+        self.smoke_sensor.update_new_data()
+        co_sensor_value = self.co_sensor.get_processed_data()
+        fire_sensor_value = self.fire_sensor.get_processed_data()
+        heat_sensor_value = self.heat_sensor.get_processed_data()
+        smoke_sensor_value = self.smoke_sensor.get_processed_data()
         ######################################################
         # Todo: processing data
         #       danger detection
@@ -64,7 +82,6 @@ class FireAlertDevice:
         else:
             self.status = 'safe'
         ####################################################
-        return self.status
     ##########################################################
 
     # Put data ###############################################

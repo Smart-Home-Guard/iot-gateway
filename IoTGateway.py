@@ -10,7 +10,7 @@ from Adafruit_IO import MQTTClient
 from Constants import *
 from SensorComponent import *
 from ButtonComponent import *
-from LightComponent import *
+from OutputComponent import *
 from Miscellaneous import *
 
 
@@ -23,7 +23,7 @@ class Gateway:
         self.aio_username = aio_username
         self.aio_key = aio_key
         # Device list
-        self.device_list = {}
+        self.device_list = {'fire-alert-devices': [], 'alert-devices': []}
         # Serial message buffer
         self.serial_message_buffer = queue.Queue()
 
@@ -38,74 +38,109 @@ class Gateway:
         with open(device_info_path, "r") as file:
             device_info_dict = json.load(file)
 
-        co_sensor_node_list = [None] * 100
-        fire_sensor_node_list = [None] * 100
-        heat_sensor_node_list = [None] * 100
-        smoke_sensor_node_list = [None] * 100
-        button_node_list = [None] * 100
-        light_node_list = [None] * 100
-        if 'co' in device_info_dict:
-            co_sensor_info_list = device_info_dict['co']
-            for idx in range(0, len(co_sensor_info_list)):
-                co_sensor_node_list[idx] = SensorComponent(feed_id=co_sensor_info_list[idx]['feed_id'],
-                                                           sensor_id=co_sensor_info_list[idx]['sensor_id'],
-                                                           component_id=co_sensor_info_list[idx]['component_id'],
-                                                           processed_data_threshold=co_sensor_info_list[idx]
-                                                  ['processed_data_threshold'])
-        if 'fire' in device_info_dict:
-            fire_sensor_info_list = device_info_dict['fire']
-            for idx in range(0, len(fire_sensor_info_list)):
-                fire_sensor_node_list[idx] = SensorComponent(feed_id=fire_sensor_info_list[idx]['feed_id'],
-                                                             sensor_id=fire_sensor_info_list[idx]['sensor_id'],
-                                                             component_id=fire_sensor_info_list[idx]['component_id'],
-                                                             processed_data_threshold=fire_sensor_info_list[idx]
-                                                    ['processed_data_threshold'])
-        if 'heat' in device_info_dict:
-            heat_sensor_info_list = device_info_dict['heat']
-            for idx in range(0, len(heat_sensor_info_list)):
-                heat_sensor_node_list[idx] = SensorComponent(feed_id=heat_sensor_info_list[idx]['feed_id'],
-                                                             sensor_id=heat_sensor_info_list[idx]['sensor_id'],
-                                                             component_id=heat_sensor_info_list[idx]['component_id'],
-                                                             processed_data_threshold=heat_sensor_info_list[idx]
-                                                    ['processed_data_threshold'])
-        if 'smoke' in device_info_dict:
-            smoke_sensor_info_list = device_info_dict['smoke']
-            for idx in range(0, len(smoke_sensor_info_list)):
-                smoke_sensor_node_list[idx] = SensorComponent(feed_id=smoke_sensor_info_list[idx]['feed_id'],
-                                                              sensor_id=smoke_sensor_info_list[idx]['sensor_id'],
-                                                              component_id=smoke_sensor_info_list[idx]['component_id'],
-                                                              processed_data_threshold=smoke_sensor_info_list[idx]
-                                                     ['processed_data_threshold'])
-        if 'button' in device_info_dict:
-            button_info_list = device_info_dict['button']
-            for idx in range(0, len(button_info_list)):
-                button_node_list[idx] = ButtonComponent(feed_id=button_info_list[idx]['feed_id'],
-                                                        device_id=button_info_list[idx]['device_id'],
-                                                        component_id=button_info_list[idx]['component_id'])
-        if 'light' in device_info_dict:
-            light_info_list = device_info_dict['light']
-            for idx in range(0, len(light_info_list)):
-                light_node_list[idx] = ButtonComponent(feed_id=light_info_list[idx]['feed_id'],
-                                                       device_id=light_info_list[idx]['device_id'],
-                                                       component_id=light_info_list[idx]['component_id'])
-        self.sensor_device_list = {
-            'co': co_sensor_node_list,
-            'fire': fire_sensor_node_list,
-            'heat': heat_sensor_node_list,
-            'smoke': smoke_sensor_node_list
-        }
-        # Get sensor info
-        # self.sensor_device_list = {
-        #     'co': device_info_dict['co'],
-        #     'fire': device_info_dict['fire'],
-        #     'heat': device_info_dict['heat'],
-        #     'smoke': device_info_dict['smoke']
-        # }
-        # # Get button info
-        # self.button_device_list = device_info_dict['button']
-        # # Get light info
-        # self.light_device_list = device_info_dict['light']
-        # pass
+        if 'fire-alert-devices' in device_info_dict:
+            fire_alert_device_list = device_info_dict['fire-alert-devices']
+            for idx in range(0, len(fire_alert_device_list)):
+                fire_alert_device = fire_alert_device_list[idx]
+                # Get information
+                co_sensor = None
+                if len(fire_alert_device['co']) > 0:
+                    co_sensor_info = fire_alert_device['co'][0]
+                    co_sensor = SensorComponent(feed_id=co_sensor_info['feed_id'],
+                                                sensor_id=co_sensor_info['sensor_id'],
+                                                component_id=co_sensor_info['component_id'],
+                                                processed_data_threshold=co_sensor_info['processed_data_threshold'])
+                fire_sensor = None
+                if len(fire_alert_device['fire']) > 0:
+                    fire_sensor_info = fire_alert_device['fire'][0]
+                    fire_sensor = SensorComponent(feed_id=fire_sensor_info['feed_id'],
+                                                  sensor_id=fire_sensor_info['sensor_id'],
+                                                  component_id=fire_sensor_info['component_id'],
+                                                  processed_data_threshold=fire_sensor_info['processed_data_threshold'])
+                heat_sensor = None
+                if len(fire_alert_device['heat']) > 0:
+                    heat_sensor_info = fire_alert_device['heat'][0]
+                    heat_sensor = SensorComponent(feed_id=heat_sensor_info['feed_id'],
+                                                  sensor_id=heat_sensor_info['sensor_id'],
+                                                  component_id=heat_sensor_info['component_id'],
+                                                  processed_data_threshold=heat_sensor_info['processed_data_threshold'])
+                smoke_sensor = None
+                if len(fire_alert_device['smoke']) > 0:
+                    smoke_sensor_info = fire_alert_device['smoke'][0]
+                    smoke_sensor = SensorComponent(feed_id=smoke_sensor_info['feed_id'],
+                                                   sensor_id=smoke_sensor_info['sensor_id'],
+                                                   component_id=smoke_sensor_info['component_id'],
+                                                   processed_data_threshold=smoke_sensor_info['processed_data_threshold'])
+                lpg_sensor = None
+                if len(fire_alert_device['lpg']) > 0:
+                    lpg_sensor_info = fire_alert_device['lpg'][0]
+                    lpg_sensor = SensorComponent(feed_id=lpg_sensor_info['feed_id'],
+                                                 sensor_id=lpg_sensor_info['sensor_id'],
+                                                 component_id=lpg_sensor_info['component_id'],
+                                                 processed_data_threshold=lpg_sensor_info['processed_data_threshold'])
+                button_component = None
+                if len(fire_alert_device['button']) > 0:
+                    button_component_info = fire_alert_device['button'][0]
+                    button_component = ButtonComponent(feed_id=button_component_info['feed_id'],
+                                                       device_id=button_component_info['device_id'],
+                                                       component_id=button_component_info['component_id'])
+                light_component = None
+                if len(fire_alert_device['light']) > 0:
+                    light_component_info = fire_alert_device['light'][0]
+                    light_component = OutputComponent(feed_id=light_component_info['feed_id'],
+                                                      device_id=light_component_info['device_id'],
+                                                      component_id=light_component_info['component_id'])
+                buzzer_component = None
+                if len(fire_alert_device['buzzer']) > 0:
+                    buzzer_component_info = fire_alert_device['buzzer'][0]
+                    buzzer_component = OutputComponent(feed_id=buzzer_component_info['feed_id'],
+                                                       device_id=buzzer_component_info['device_id'],
+                                                       component_id=buzzer_component_info['component_id'])
+                fire_alert_device_dict = {
+                    'co': co_sensor,
+                    'fire': fire_sensor,
+                    'heat': heat_sensor,
+                    'smoke': smoke_sensor,
+                    'lpg': lpg_sensor,
+                    'button': button_component,
+                    'light': light_component,
+                    'buzzer': buzzer_component
+                }
+                self.device_list['fire-alert-devices'].append(fire_alert_device_dict)
+        else:
+            print(f'Warning: Missing Fire Alert device information')
+
+        if 'alert-devices' in device_info_dict:
+            alert_devices_list = device_info_dict['alert-devices']
+            for idx in range(0, len(alert_devices_list)):
+                alert_device = alert_devices_list[idx]
+                button_component = None
+                if len(alert_device['button']) > 0:
+                    button_component_info = alert_device['button'][0]
+                    button_component = ButtonComponent(feed_id=button_component_info['feed_id'],
+                                                       device_id=button_component_info['device_id'],
+                                                       component_id=button_component_info['component_id'])
+                light_component = None
+                if len(alert_device['light']) > 0:
+                    light_component_info = alert_device['light'][0]
+                    light_component = ButtonComponent(feed_id=light_component_info['feed_id'],
+                                                      device_id=light_component_info['device_id'],
+                                                      component_id=light_component_info['component_id'])
+                buzzer_component = None
+                if len(alert_device['buzzer']) > 0:
+                    buzzer_component_info = alert_device['buzzer'][0]
+                    buzzer_component = ButtonComponent(feed_id=buzzer_component_info['feed_id'],
+                                                       device_id=buzzer_component_info['device_id'],
+                                                       component_id=buzzer_component_info['component_id'])
+                alert_device_dict = {
+                    'button': button_component,
+                    'light': light_component,
+                    'buzzer': buzzer_component
+                }
+                self.device_list['alert-devices'].append(alert_device_dict)
+
+        else:
+            print(f'Warning: Missing Alert device information')
 
     def init_serial(self):
         # Serial connection
@@ -165,19 +200,6 @@ class Gateway:
         mqtt_client.loop_start()
 
     def adafruit_server_connection(self):
-        aio_feed_id = ["smarthomeguard.shg-lpg",
-                       "smarthomeguard.shg-fire",
-                       "smarthomeguard.shg-co",
-                       "smarthomeguard.shg-smoke",
-                       "smarthomeguard.shg-heat",
-                       "smarthomeguard.shg-fire-alert",
-                       "smarthomeguard.shg-smoke-alert",
-                       "smarthomeguard.shg-co-alert",
-                       "smarthomeguard.shg-lpg-alert",
-                       "smarthomeguard.shg-alert-button",
-                       "smarthomeguard.shg-alert-light",
-                       "smarthomeguard.shg-alert-buzzer"]
-
         def connected(client_in, aio_feed_id_in, aio_username_in):
             print("Adafruit server is connected")
             client_in.subscribe(aio_feed_id_in, aio_username_in)
@@ -233,4 +255,4 @@ mess = ''
 
 temp_gateway = Gateway('a', 'b')
 temp_gateway.start()
-print(temp_gateway.sensor_device_list)
+print(temp_gateway.device_list)
