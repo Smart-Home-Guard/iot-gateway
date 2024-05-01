@@ -1,0 +1,96 @@
+{
+  "fire-alert-device": [
+    {
+      "co": [
+        {
+          "feed_id": "None",
+          "sensor_id": 0,
+          "component_id": 3,
+          "processed_data_threshold": -1
+        }
+      ],
+      "fire": [
+        {
+          "feed_id": "None",
+          "sensor_id": 0,
+          "component_id": 3,
+          "processed_data_threshold": -1
+        }
+      ],
+      "smoke": [
+        {
+          "feed_id": "None",
+          "sensor_id": 0,
+          "component_id": 3,
+          "processed_data_threshold": -1
+        }
+      ],
+      "heat": [
+        {
+          "feed_id": "None",
+          "sensor_id": 0,
+          "component_id": 3,
+          "processed_data_threshold": -1
+        }
+      ],
+      "button": [
+        {
+          "feed_id": "None",
+          "device_id": 0,
+          "component_id": 3
+        }
+      ],
+      "light": [
+        {
+          "feed_id": "None",
+          "device_id": 0,
+          "component_id": 3
+        }
+      ]
+    }
+  ],
+  "lpg-alert-device": [
+    {
+      "lpg": [
+        {
+          "feed_id": "None",
+          "sensor_id": 0,
+          "component_id": 3,
+          "processed_data_threshold": -1
+        }
+      ],
+      "button": [
+        {
+          "feed_id": "None",
+          "device_id": 0,
+          "component_id": 3
+        }
+      ],
+      "light": [
+        {
+          "feed_id": "None",
+          "device_id": 0,
+          "component_id": 3
+        }
+      ]
+    }
+  ],
+  "alert-device": [
+    {
+      "button": [
+        {
+          "feed_id": "None",
+          "device_id": 0,
+          "component_id": 3
+        }
+      ],
+      "light": [
+        {
+          "feed_id": "None",
+          "device_id": 0,
+          "component_id": 3
+        }
+      ]
+    }
+  ]
+}
