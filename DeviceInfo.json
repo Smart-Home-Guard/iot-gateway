@@ -13,7 +13,7 @@
         {
           "feed_id": "smarthomeguard.shg-fire",
           "sensor_id": 0,
-          "component_id": 3,
+          "component_id": 4,
           "processed_data_threshold": -1
         }
       ],
@@ -21,7 +21,7 @@
         {
           "feed_id": "smarthomeguard.shg-smoke",
           "sensor_id": 0,
-          "component_id": 3,
+          "component_id": 5,
           "processed_data_threshold": -1
         }
       ],
@@ -29,7 +29,7 @@
         {
           "feed_id": "smarthomeguard.shg-heat",
           "sensor_id": 0,
-          "component_id": 3,
+          "component_id": 6,
           "processed_data_threshold": -1
         }
       ],
@@ -69,21 +69,21 @@
       "button": [
         {
           "feed_id": "None",
-          "device_id": 0,
+          "device_id": 1,
           "component_id": 3
         }
       ],
       "light": [
         {
           "feed_id": "None",
-          "device_id": 0,
+          "device_id": 1,
           "component_id": 3
         }
       ],
       "buzzer": [
         {
           "feed_id": "",
-          "device_id": 0,
+          "device_id": 1,
           "component_id": 3
         }
       ]

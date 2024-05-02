@@ -3,7 +3,7 @@ import numpy as np
 
 
 class SensorComponent:
-    def __init__(self, feed_id='None', sensor_id=0, component_id=0, processed_data_threshold=0x7fffffff):
+    def __init__(self, feed_id='None', sensor_id=0, component_id=0, processed_data_threshold=0x7fffffff, sensor_status=False):
         self.feed_id = feed_id
         self.sensor_id = sensor_id
         self.component_id = component_id
@@ -12,7 +12,7 @@ class SensorComponent:
         self.processed_data = 0
         self.processed_data_threshold = processed_data_threshold
         self.battery = BatteryComponent()
-        self.sensor_status = True       # En
+        self.sensor_status = sensor_status       # Enable
 
     def set_threshold(self, new_threshold_value):
         self.processed_data_threshold = new_threshold_value
@@ -45,18 +45,20 @@ class SensorComponent:
         self.processed_data = new_processed_data
 
     def get_metrics(self):
-        metrics_dict = {
-            'id': self.sensor_id,
-            'component': self.component_id,
-            'value': self.get_processed_data(),
-            'alert': self.is_safe()
-        }
+        metrics_dict = {}
+        if self.sensor_status:
+            metrics_dict = {
+                'id': self.sensor_id,
+                'component': self.component_id,
+                'value': self.get_processed_data(),
+                'alert': self.is_safe()
+            }
         return metrics_dict
 
 
 # Testing segment
 if __name__ == '__main__':
-    co_sensor = SensorComponent(feed_id='co_feed', sensor_id=2, component_id=3)
+    co_sensor = SensorComponent(feed_id='co_feed', sensor_id=2, component_id=3, sensor_status=True)
     for i in range(0, 30):
         co_sensor.put_raw_data(i)
     print('--------------- Before updating--------------------')

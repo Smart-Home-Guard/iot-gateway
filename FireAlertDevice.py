@@ -9,6 +9,7 @@ class FireAlertDevice:
                  fire_sensor=SensorComponent(),
                  heat_sensor=SensorComponent(),
                  smoke_sensor=SensorComponent(),
+                 lpg_sensor=SensorComponent(),
                  button_component=ButtonComponent(),
                  light_component=OutputComponent(),
                  buzzer_component=OutputComponent()):
@@ -17,6 +18,7 @@ class FireAlertDevice:
         self.fire_sensor = fire_sensor              # 1 component
         self.heat_sensor = heat_sensor              # 1 component
         self.smoke_sensor = smoke_sensor            # 1 component
+        self.lpg_sensor = lpg_sensor                # 1 component
         self.button_component = button_component    # 1 component
         self.light_component = light_component      # 1 component
         self.buzzer_component = buzzer_component    # 1 component
@@ -35,6 +37,9 @@ class FireAlertDevice:
     def get_smoke_sensor_list(self):
         return self.smoke_sensor
 
+    def get_lpg_sensor_list(self):
+        return self.smoke_sensor
+
     def get_button_list(self):
         return self.button_component
 
@@ -49,14 +54,21 @@ class FireAlertDevice:
         fire_sensor_dict = self.fire_sensor.get_metrics()
         heat_sensor_dict = self.heat_sensor.get_metrics()
         smoke_sensor_dict = self.smoke_sensor.get_metrics()
+        lpg_sensor_dict = self.lpg_sensor.get_metrics()
+        button_component_dict = self.button_component.get_metrics()
+        light_component_dict = self.light_component.get_metrics()
+        buzzer_component_dict = self.buzzer_component.get_metrics()
         fire_alert_device_dict = {
             'co': [co_sensor_dict],
             'fire': [fire_sensor_dict],
             'heat': [heat_sensor_dict],
-            'smoke': [smoke_sensor_dict]
-            # todo: Thêm button, light, buzzer
+            'smoke': [smoke_sensor_dict],
+            'lpg': [lpg_sensor_dict],
+            'fire-button': [button_component_dict],
+            'fire-light': [light_component_dict],
+            'fire-buzzer': [buzzer_component_dict]
         }
-        return
+        return fire_alert_device_dict
     ##########################################################
 
     # Update data ############################################
@@ -65,14 +77,16 @@ class FireAlertDevice:
         self.fire_sensor.update_new_data()
         self.heat_sensor.update_new_data()
         self.smoke_sensor.update_new_data()
+        self.lpg_sensor.update_new_data()
         co_sensor_value = self.co_sensor.get_processed_data()
         fire_sensor_value = self.fire_sensor.get_processed_data()
         heat_sensor_value = self.heat_sensor.get_processed_data()
         smoke_sensor_value = self.smoke_sensor.get_processed_data()
+        lpg_sensor_value = self.lpg_sensor.get_processed_data()
         ######################################################
         # Todo: processing data
         #       danger detection
-        processed_data = co_sensor_value + fire_sensor_value + heat_sensor_value + smoke_sensor_value
+        processed_data = co_sensor_value + fire_sensor_value + heat_sensor_value + smoke_sensor_value + lpg_sensor_value
         if processed_data > 128:
             self.status = 'dangerous-2'
         elif processed_data > 64:
@@ -108,14 +122,20 @@ class FireAlertDevice:
             self.smoke_sensor.put_raw_data(value)
         else:
             print(f'Warning: The component does not exist (Smoke: {component_id})')
+
+    def put_data_lpg_sensor(self, component_id, value):
+        if self.lpg_sensor.component_id == component_id:
+            self.lpg_sensor.put_raw_data(value)
+        else:
+            print(f'Warning: The component does not exist (LPG: {component_id})')
     ##########################################################
 
 
 # Testing segment
 if __name__ == '__main__':
     co_sensor_list = [None, None]
-    co_sensor_0 = SensorComponent(feed_id='3', sensor_id=0, component_id=0, processed_data_threshold=-1)
-    co_sensor_1 = SensorComponent(feed_id='2', sensor_id=0, component_id=1, processed_data_threshold=-1)
+    co_sensor_0 = SensorComponent(feed_id='3', sensor_id=0, component_id=0, processed_data_threshold=-1, sensor_status=True)
+    co_sensor_1 = SensorComponent(feed_id='2', sensor_id=0, component_id=1, processed_data_threshold=-1, sensor_status=True)
     co_sensor_list[0] = co_sensor_0
     co_sensor_list[1] = co_sensor_1
 
@@ -123,5 +143,9 @@ if __name__ == '__main__':
     temp_device.put_data_co_sensor(2, 30)
     temp_device.put_data_co_sensor(1, 10)
     temp_device.put_data_co_sensor(0, 10)
+    temp_device.put_data_co_sensor(0, 50)
 
-    print(temp_device.co_sensor.get_new_processed_data())
+    temp_device.update_all_data()
+
+    print(temp_device.co_sensor.get_processed_data())
+    print(temp_device.get_metrics())
