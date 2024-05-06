@@ -5,7 +5,7 @@
         {
           "feed_id": "smarthomeguard.shg-co",
           "sensor_id": 0,
-          "component_id": 3,
+          "component_id": 52,
           "processed_data_threshold": -1
         }
       ],
@@ -13,7 +13,7 @@
         {
           "feed_id": "smarthomeguard.shg-fire",
           "sensor_id": 0,
-          "component_id": 4,
+          "component_id": 54,
           "processed_data_threshold": -1
         }
       ],
@@ -21,7 +21,7 @@
         {
           "feed_id": "smarthomeguard.shg-smoke",
           "sensor_id": 0,
-          "component_id": 5,
+          "component_id": 50,
           "processed_data_threshold": -1
         }
       ],
@@ -29,7 +29,7 @@
         {
           "feed_id": "smarthomeguard.shg-heat",
           "sensor_id": 0,
-          "component_id": 6,
+          "component_id": 51,
           "processed_data_threshold": -1
         }
       ],
@@ -37,7 +37,7 @@
         {
           "feed_id": "smarthomeguard.shg-lpg",
           "sensor_id": 0,
-          "component_id": 3,
+          "component_id": 53,
           "processed_data_threshold": -1
         }
       ],
@@ -45,21 +45,21 @@
         {
           "feed_id": "None",
           "device_id": 0,
-          "component_id": 3
+          "component_id": 10
         }
       ],
       "light": [
         {
           "feed_id": "smarthomeguard.shg-fire-alert",
           "device_id": 0,
-          "component_id": 3
+          "component_id": 12
         }
       ],
       "buzzer": [
         {
           "feed_id": "smarthomeguard.shg-fire-alert",
           "device_id": 0,
-          "component_id": 3
+          "component_id": 14
         }
       ]
     }
@@ -70,21 +70,21 @@
         {
           "feed_id": "None",
           "device_id": 1,
-          "component_id": 3
+          "component_id": 10
         }
       ],
       "light": [
         {
           "feed_id": "None",
           "device_id": 1,
-          "component_id": 3
+          "component_id": 12
         }
       ],
       "buzzer": [
         {
           "feed_id": "",
           "device_id": 1,
-          "component_id": 3
+          "component_id": 14
         }
       ]
     }

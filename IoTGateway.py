@@ -3,38 +3,47 @@ import queue
 import sys
 import threading
 
-import paho.mqtt.client as mqtt
 import serial
 import serial.tools.list_ports
-from Adafruit_IO import MQTTClient
-from Constants import *
-from FireAlertDevice import *
-from AlertDevice import *
-from SensorComponent import *
-from ButtonComponent import *
-from OutputComponent import *
-from Miscellaneous import *
+from Adafruit_IO import MQTTClient as AdafruitClient
+import paho.mqtt.client as mqtt
+from Mics.Constants import *
+from Devices.FireAlertDevice import *
+from Devices.AlertDevice import *
+from Components.SensorComponent import *
+from Components.ButtonComponent import *
+from Components.OutputComponent import *
+from Mics.Miscellaneous import *
 
 
 class Gateway:
+    # Mode configuration
+    WITHOUT_SERIAL_CONNECTION = True
+
     def __init__(self, aio_username, aio_key):
         # MQTT Server
-        self.client_id = ''
-        self.client_token = ''
+        self.mqtt_client_id = ''
+        self.mqtt_client_token = ''
+        self.mqtt_client = None
         # Adafruit Server
         self.aio_username = aio_username
         self.aio_key = aio_key
         # Device list
         self.device_list = {'fire-alert-devices': [], 'alert-devices': []}
-        # Serial message buffer
+        # Serial
+        self.serial_obj = None
         self.serial_message_buffer = queue.Queue()
 
     # Set up connection #################################################################
-    def load_client_info(self, client_info_path):
-        with open(client_info_path, "r") as file:
-            client_info_dict = json.load(file)
-        self.client_id = client_info_dict["client_id"]
-        self.client_token = client_info_dict["client_token"]
+    def load_client_info(self, mqtt_client_info_path, aio_user_info_path):
+        with open(mqtt_client_info_path, "r") as file:
+            mqtt_client_info_dict = json.load(file)
+        self.mqtt_client_id = mqtt_client_info_dict["client_id"]
+        self.mqtt_client_token = mqtt_client_info_dict["client_token"]
+        with open(aio_user_info_path, "r") as file:
+            aio_user_info_dict = json.load(file)
+        self.aio_username = aio_user_info_dict["aio_username"]
+        self.aio_key = aio_user_info_dict["aio_key"]
 
     def load_device_info(self, device_info_path):
         with open(device_info_path, "r") as file:
@@ -164,17 +173,63 @@ class Gateway:
             print(f'Warning: Missing Alert device information')
 
     def init_serial(self):
-        # Serial connection
-        ser = serial.Serial(port="COM17", baudrate=115200)  # COM17 - COM15
-        return ser
+        if not self.WITHOUT_SERIAL_CONNECTION:
+            # Serial connection
+            self.serial_obj = serial.Serial(port="COM17", baudrate=115200)  # COM17 - COM15
+        return 'None'
     ######################################################################################
 
+    # Get attr of the object ####################################################################
+    def get_components_list(self):
+        components_list = []
+        for device in self.device_list['fire-alert-devices']:
+            components_list = components_list + device.get_info()
+        for device in self.device_list['alert-devices']:
+            components_list = components_list + device.get_info()
+        print(components_list)
+        return components_list
+
+    #############################################################################################
+
+    # MQTT Server method ########################################################################
+    def get_topic(self, channel_type):
+        if channel_type == 'fire-alert':
+            return self.mqtt_client_id + '/fire-alert-metrics'
+        elif channel_type == 'devices-status':
+            return self.mqtt_client_id + 'devices-status-metrics'
+        return ''
+
+    def publish_components_connection(self):
+        components_list = self.get_components_list()
+        # Publish to MQTT server
+        message_topic = self.get_topic(channel_type='devices-status')
+        message = {
+            'kind': KENUM_CONNECT_DEVICE,
+            'payload': {
+                'token': self.mqtt_client_token,
+                'data': components_list
+            }
+        }
+        print(f'INFO: Publish all components to the MQTT server (message: {message})')
+        try:
+            self.mqtt_client.publish(topic=message_topic, payload=json.dump(message))
+        except:
+            print('ERROR: Can not publish the message to the MQTT Server')
+    #############################################################################################
+
     # Serial thread #############################################################################
-    def read_serial(self, ser):
-        bytes_to_read = ser.in_waiting
+    def read_serial(self):
+        if not self.WITHOUT_SERIAL_CONNECTION:
+            bytes_to_read = self.serial_obj.in_waiting
+        else:
+            bytes_to_read = input('Your commands: ')
+
         if bytes_to_read > 0:
             global mess
-            mess = mess + ser.read(bytes_to_read).decode("UTF-8")
+            if not self.WITHOUT_SERIAL_CONNECTION:
+                mess = mess + self.serial_obj.read(bytes_to_read).decode("UTF-8")
+            else:
+                mess = mess + bytes_to_read
             # print(mess + "\n")
             while ("#" in mess) and ("!" in mess):
                 start = mess.find("!")
@@ -194,7 +249,7 @@ class Gateway:
         split_data = data.split(":")
         node_funct_id = split_data[NODE_FUNCT_ID_IDX]
         node_device_id = split_data[NODE_DEVICE_ID_IDX]
-        node_value = {}
+        node_value = [None] * NODE_VALUE_6_IDX
         for i in range(len(split_data) - NODE_VALUE_1_IDX):  #
             node_value[i] = split_data[NODE_VALUE_1_IDX + i]
 
@@ -215,10 +270,16 @@ class Gateway:
     ################################################################################################
 
     # Server connection Thread #############################################################################
+    def connect_to_mqtt_server(self):
+        self.mqtt_client = mqtt.Client(self.mqtt_client_id)
+        try:
+            self.mqtt_client.connect('test.mosquitto.org')
+            print('INFO: Connect to the MQTT server successfully')
+        except:
+            print('ERROR: Can not connect to the MQTT server')
+
     def mqtt_server_connection(self):
-        mqtt_client = mqtt.Client(self.client_id)
-        mqtt_client.connect('test.mosquitto.org')
-        mqtt_client.loop_start()
+        self.mqtt_client.loop_start()
 
     def adafruit_server_connection(self):
         def connected(client_in, aio_feed_id_in, aio_username_in):
@@ -235,7 +296,7 @@ class Gateway:
         def subscribe(client_in, userdata, mid, granted_qos):
             print("Subscribe thanh cong...")
 
-        client = MQTTClient(self.aio_username, self.aio_key)
+        client = AdafruitClient(self.aio_username, self.aio_key)
         client.on_connect = connected
         client.on_disconnect = disconnected
         client.on_message = message
@@ -247,33 +308,42 @@ class Gateway:
     # Main ###############################################################################
     def start(self):
         # Load Client information
-        self.load_client_info('ClientInfo.json')
+        self.load_client_info('PrivateInfo/MqttClientInfo.json',
+                              'PrivateInfo/AdafruitUserInfo.json')
 
         # Load Sensor information
         self.load_device_info('DeviceInfo.json')
 
-        # # Set up serial connection
-        # ser = self.init_serial()
-        #
-        # # Connect to Adafruit server
+        # Set up serial connection
+        ser = self.init_serial()
+
+        # Establish connection with the MQTT server
+        self.connect_to_mqtt_server()
+
+        # Connect to Adafruit server
         # adafruit_server_connection_thread = threading.Thread(target=self.adafruit_server_connection)
         # adafruit_server_connection_thread.start()
-        #
-        # # Connect to MQTT server (create a MQTT connection thread)
-        # mqtt_server_connection_thread = threading.Thread(target=self.mqtt_server_connection)
-        # mqtt_server_connection_thread.start()
-        #
-        # # Serial Reader thread
-        # serial_reader_thread = threading.Thread(target=self.read_serial)
-        # serial_reader_thread.start()
-        #
-        # # Serial handle
-        # self.handle_serial()
-    ######################################################################################
 
+        # Publish all components
+        self.publish_components_connection()
+
+        # Connect to MQTT server (create a MQTT connection thread)
+        mqtt_server_connection_thread = threading.Thread(target=self.mqtt_server_connection)
+        mqtt_server_connection_thread.start()
+
+        # Serial Reader thread
+        serial_reader_thread = threading.Thread(target=self.read_serial)
+        serial_reader_thread.start()
+
+        # Serial handle
+        self.handle_serial()
+    ######################################################################################
 
 mess = ''
 
-temp_gateway = Gateway('a', 'b')
-temp_gateway.start()
-print(temp_gateway.device_list['alert-devices'][0].get_metrics())
+if __name__ == '__main__':
+    temp_gateway = Gateway('a', 'b')
+    temp_gateway.start()
+    # End #
+
+    print(temp_gateway.device_list['alert-devices'][0].get_metrics())

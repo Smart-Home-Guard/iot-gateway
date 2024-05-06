@@ -1,5 +1,5 @@
-from ButtonComponent import *
-from OutputComponent import *
+from Components.ButtonComponent import *
+from Components.OutputComponent import *
 
 
 class AlertDevice:
@@ -56,3 +56,9 @@ class AlertDevice:
             'buzzer': self.buzzer_component.get_metrics()
         }
         return metrics_dict
+
+    def get_info(self):
+        alert_device_info = [self.button_component.get_info(),
+                             self.light_component.get_info(),
+                             self.buzzer_component.get_info()]
+        return alert_device_info

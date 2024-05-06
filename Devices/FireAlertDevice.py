@@ -1,6 +1,6 @@
-from SensorComponent import *
-from ButtonComponent import *
-from OutputComponent import *
+from Components.SensorComponent import *
+from Components.ButtonComponent import *
+from Components.OutputComponent import *
 
 
 class FireAlertDevice:
@@ -69,6 +69,20 @@ class FireAlertDevice:
             'fire-buzzer': [buzzer_component_dict]
         }
         return fire_alert_device_dict
+
+    def get_info(self):
+        co_sensor_dict = self.co_sensor.get_info()
+        fire_sensor_dict = self.fire_sensor.get_info()
+        heat_sensor_dict = self.heat_sensor.get_info()
+        smoke_sensor_dict = self.smoke_sensor.get_info()
+        lpg_sensor_dict = self.lpg_sensor.get_info()
+        button_component_dict = self.button_component.get_info()
+        light_component_dict = self.light_component.get_info()
+        buzzer_component_dict = self.buzzer_component.get_info()
+        fire_alert_device_info_array = [co_sensor_dict, fire_sensor_dict, heat_sensor_dict, smoke_sensor_dict,
+                                        lpg_sensor_dict, button_component_dict, light_component_dict,
+                                        buzzer_component_dict]
+        return fire_alert_device_info_array
     ##########################################################
 
     # Update data ############################################

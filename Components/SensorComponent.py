@@ -1,4 +1,4 @@
-from BatteryComponent import *
+from Components.BatteryComponent import *
 import numpy as np
 
 
@@ -54,6 +54,15 @@ class SensorComponent:
                 'alert': self.is_safe()
             }
         return metrics_dict
+
+    def get_info(self):
+        info_dict = {}
+        if self.sensor_status:
+            info_dict = {
+                'id': self.sensor_id,
+                'component': self.component_id
+            }
+        return info_dict
 
 
 # Testing segment
