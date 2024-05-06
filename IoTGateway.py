@@ -20,16 +20,18 @@ class Gateway:
     # Mode configuration
     WITHOUT_SERIAL_CONNECTION = True
 
-    def __init__(self, aio_username, aio_key):
+    def __init__(self):
         # MQTT Server
+        self.mqtt_client_socket = None
         self.mqtt_client_id = ''
         self.mqtt_client_token = ''
-        self.mqtt_client = None
         # Adafruit Server
-        self.aio_username = aio_username
-        self.aio_key = aio_key
+        self.aio_client_socket = None
+        self.aio_username = ''
+        self.aio_key = ''
+        self.aio_feed_id = AIO_FEED_ID
         # Device list
-        self.device_list = {'fire-alert-devices': [], 'alert-devices': []}
+        self.device_list = {'fire-alert-devices': [FireAlertDevice()], 'alert-devices': [AlertDevice()]}
         # Serial
         self.serial_obj = None
         self.serial_message_buffer = queue.Queue()
@@ -46,6 +48,11 @@ class Gateway:
         self.aio_key = aio_user_info_dict["aio_key"]
 
     def load_device_info(self, device_info_path):
+        # Clear buffer
+        self.device_list['fire-alert-device'] = []
+        self.device_list['alert-device'] = []
+
+        # Load from the device file
         with open(device_info_path, "r") as file:
             device_info_dict = json.load(file)
 
@@ -63,7 +70,7 @@ class Gateway:
                                                 sensor_id=co_sensor_info['sensor_id'],
                                                 component_id=co_sensor_info['component_id'],
                                                 processed_data_threshold=co_sensor_info['processed_data_threshold'],
-                                                sensor_status=True)
+                                                sensor_enable=True)
                 fire_sensor = None
                 if len(fire_alert_device['fire']) > 0:
                     fire_sensor_info = fire_alert_device['fire'][0]
@@ -72,7 +79,7 @@ class Gateway:
                                                   sensor_id=fire_sensor_info['sensor_id'],
                                                   component_id=fire_sensor_info['component_id'],
                                                   processed_data_threshold=fire_sensor_info['processed_data_threshold'],
-                                                  sensor_status=True)
+                                                  sensor_enable=True)
                 heat_sensor = None
                 if len(fire_alert_device['heat']) > 0:
                     heat_sensor_info = fire_alert_device['heat'][0]
@@ -81,7 +88,7 @@ class Gateway:
                                                   sensor_id=heat_sensor_info['sensor_id'],
                                                   component_id=heat_sensor_info['component_id'],
                                                   processed_data_threshold=heat_sensor_info['processed_data_threshold'],
-                                                  sensor_status=True)
+                                                  sensor_enable=True)
                 smoke_sensor = None
                 if len(fire_alert_device['smoke']) > 0:
                     smoke_sensor_info = fire_alert_device['smoke'][0]
@@ -90,7 +97,7 @@ class Gateway:
                                                    sensor_id=smoke_sensor_info['sensor_id'],
                                                    component_id=smoke_sensor_info['component_id'],
                                                    processed_data_threshold=smoke_sensor_info['processed_data_threshold'],
-                                                   sensor_status=True)
+                                                   sensor_enable=True)
                 lpg_sensor = None
                 if len(fire_alert_device['lpg']) > 0:
                     lpg_sensor_info = fire_alert_device['lpg'][0]
@@ -99,7 +106,7 @@ class Gateway:
                                                  sensor_id=lpg_sensor_info['sensor_id'],
                                                  component_id=lpg_sensor_info['component_id'],
                                                  processed_data_threshold=lpg_sensor_info['processed_data_threshold'],
-                                                 sensor_status=True)
+                                                 sensor_enable=True)
                 button_component = None
                 if len(fire_alert_device['button']) > 0:
                     button_component_info = fire_alert_device['button'][0]
@@ -107,7 +114,7 @@ class Gateway:
                     button_component = ButtonComponent(feed_id=button_component_info['feed_id'],
                                                        device_id=button_component_info['device_id'],
                                                        component_id=button_component_info['component_id'],
-                                                       component_status=True)
+                                                       component_enable=True)
                 light_component = None
                 if len(fire_alert_device['light']) > 0:
                     light_component_info = fire_alert_device['light'][0]
@@ -115,7 +122,7 @@ class Gateway:
                     light_component = OutputComponent(feed_id=light_component_info['feed_id'],
                                                       device_id=light_component_info['device_id'],
                                                       component_id=light_component_info['component_id'],
-                                                      component_status=True)
+                                                      component_enable=True)
                 buzzer_component = None
                 if len(fire_alert_device['buzzer']) > 0:
                     buzzer_component_info = fire_alert_device['buzzer'][0]
@@ -123,7 +130,7 @@ class Gateway:
                     buzzer_component = OutputComponent(feed_id=buzzer_component_info['feed_id'],
                                                        device_id=buzzer_component_info['device_id'],
                                                        component_id=buzzer_component_info['component_id'],
-                                                       component_status=True)
+                                                       component_enable=True)
 
                 fire_alert_device = FireAlertDevice(device_id=device_id, co_sensor=co_sensor, fire_sensor=fire_sensor,
                                                     heat_sensor=heat_sensor, smoke_sensor=smoke_sensor,
@@ -146,7 +153,7 @@ class Gateway:
                     button_component = ButtonComponent(feed_id=button_component_info['feed_id'],
                                                        device_id=button_component_info['device_id'],
                                                        component_id=button_component_info['component_id'],
-                                                       component_status=True)
+                                                       component_enable=True)
                 light_component = None
                 if len(alert_device['light']) > 0:
                     light_component_info = alert_device['light'][0]
@@ -154,7 +161,7 @@ class Gateway:
                     light_component = OutputComponent(feed_id=light_component_info['feed_id'],
                                                       device_id=light_component_info['device_id'],
                                                       component_id=light_component_info['component_id'],
-                                                      component_status=True)
+                                                      component_enable=True)
                 buzzer_component = None
                 if len(alert_device['buzzer']) > 0:
                     buzzer_component_info = alert_device['buzzer'][0]
@@ -162,7 +169,7 @@ class Gateway:
                     buzzer_component = OutputComponent(feed_id=buzzer_component_info['feed_id'],
                                                        device_id=buzzer_component_info['device_id'],
                                                        component_id=buzzer_component_info['component_id'],
-                                                       component_status=True)
+                                                       component_enable=True)
 
                 alert_device = AlertDevice(device_id=device_id, button_component=button_component,
                                            light_component=light_component, buzzer_component=buzzer_component)
@@ -178,6 +185,18 @@ class Gateway:
             self.serial_obj = serial.Serial(port="COM17", baudrate=115200)  # COM17 - COM15
         return 'None'
     ######################################################################################
+
+    # Miscellaneous #############################################################################
+    def get_device_type(self, device_id):
+        for device in self.device_list['fire-alert-devices']:
+            if device.get_device_id() == device_id:
+                return 'fire-alert-device'
+        for device in self.device_list['alert-devices']:
+            if device.get_device_id() == device_id:
+                return 'alert-device'
+        return ''
+
+    #############################################################################################
 
     # Get attr of the object ####################################################################
     def get_components_list(self):
@@ -212,9 +231,16 @@ class Gateway:
         }
         print(f'INFO: Publish all components to the MQTT server (message: {message})')
         try:
-            self.mqtt_client.publish(topic=message_topic, payload=json.dump(message))
+            self.mqtt_client_socket.publish(topic=message_topic, payload=json.dump(message))
         except:
             print('ERROR: Can not publish the message to the MQTT Server')
+    #############################################################################################
+
+    # Processing ################################################################################
+    def dangerous_detector(self):
+        # Todo: 1 thread Kiểm tra (inspect) các giá trị status của các device trong list, với tần số cao hơn tần số gửi
+        #       mẫu. ifo device.status != 'safe' -> publish to MQTT server (just 1 time)
+        pass
     #############################################################################################
 
     # Serial thread #############################################################################
@@ -242,24 +268,61 @@ class Gateway:
                     mess = mess[end + 1:]
 
     def handle_serial_message(self, serial_message):
-        # Todo: processing data
+        # Todo: Put data to buffer
         # Parser
         data = serial_message.replace("!", "")
         data = data.replace("#", "")
         split_data = data.split(":")
         node_funct_id = split_data[NODE_FUNCT_ID_IDX]
         node_device_id = split_data[NODE_DEVICE_ID_IDX]
-        node_value = [None] * NODE_VALUE_6_IDX
-        for i in range(len(split_data) - NODE_VALUE_1_IDX):  #
-            node_value[i] = split_data[NODE_VALUE_1_IDX + i]
+        node_value = [0] * NODE_VALUE_6_IDX
+        for idx in range(len(split_data) - NODE_VALUE_1_IDX):  #
+            node_value[idx] = split_data[NODE_VALUE_1_IDX + idx]
 
         # Handling
-        if node_device_id == CO_DETECTION_ENUM:
-            co_str = node_value[0]
-            component_id = 4            # Todo: Fixed
-            alert_light_value = int(node_value[1])
-            # Decode
-            co_value = decode_node_value(int(co_str), 'co')
+        if node_funct_id == FUNCT_READ_INPUT_UART:
+            device_type = self.get_device_type(node_device_id)
+            if device_type == 'fire-alert-device':
+                if len(split_data) == 7:        # Fire-alert device
+                    co_str = node_value[0]
+                    smoke_str = node_value[1]
+                    fire_str = node_value[2]
+                    co_value = decode_node_value(int(co_str), 'co')
+                    smoke_value = decode_node_value(int(smoke_str), 'smoke')
+                    fire_value = decode_node_value(int(fire_str), 'fire')
+                    for device in self.device_list['fire-alert-devices']:
+                        if device.get_device_id() == node_device_id:
+                            device.put_data_co_sensor(component_id=COMP_ID_CO, value=co_value)
+                            device.put_data_smoke_sensor(component_id=COMP_ID_SMOKE, value=smoke_value)
+                            device.put_data_fire_sensor(component_id=COMP_ID_FIRE, value=fire_value)
+                            return
+                    print(f'ERROR: Can not find the device with ID {node_device_id} (1)')
+                    return
+                elif len(split_data) == 3:      # LPG sensor
+                    lpg_str = node_value[0]
+                    lpg_value = decode_node_value(int(lpg_str), 'lpg')
+                    for device in self.device_list['fire-alert-devices']:
+                        if device.get_device_id() == node_device_id:
+                            device.put_data_lpg_sensor(component_id=COMP_ID_LPG, value=lpg_value)
+                            return
+                    print(f'ERROR: Can not find the device with ID {node_device_id} (2)')
+                    return
+                else:
+                    print('ERROR: Wrong UART format')
+                    return
+            elif device_type == 'alert-device':
+                # Todo: Put ON-OFF request to queue (button-process-queue)
+                #       Queue này sẽ có 3 nguồn put vào là PhysicalButton + CS Application
+                #       sẽ có 1 thread lấy từng ON-OFF Request để xử lý (gửi xuống phần cứng, cập nhật lên phần mềm)
+                pass
+            else:
+                pass
+        # if node_device_id == CO_DETECTION_ENUM:
+        #     co_str = node_value[0]
+        #     component_id = 4            # Todo: Fixed
+        #     alert_light_value = int(node_value[1])
+        #     # Decode
+        #     co_value = decode_node_value(int(co_str), 'co')
 
         return
 
@@ -271,38 +334,38 @@ class Gateway:
 
     # Server connection Thread #############################################################################
     def connect_to_mqtt_server(self):
-        self.mqtt_client = mqtt.Client(self.mqtt_client_id)
+        self.mqtt_client_socket = mqtt.Client(self.mqtt_client_id)
         try:
-            self.mqtt_client.connect('test.mosquitto.org')
+            self.mqtt_client_socket.connect('test.mosquitto.org')
             print('INFO: Connect to the MQTT server successfully')
         except:
             print('ERROR: Can not connect to the MQTT server')
 
     def mqtt_server_connection(self):
-        self.mqtt_client.loop_start()
+        self.mqtt_client_socket.loop_start()
 
     def adafruit_server_connection(self):
-        def connected(client_in, aio_feed_id_in, aio_username_in):
-            print("Adafruit server is connected")
-            client_in.subscribe(aio_feed_id_in, aio_username_in)
+        def connected(client_in):
+            print("INFO: The Adafruit server is connected")
+            client_in.subscribe(self.aio_feed_id, self.aio_username)
 
         def disconnected(client_in):
-            print("Disconnected")
+            print("INFO: The Adafruit server has disconnected")
             sys.exit(1)
 
         def message(client_in, feed_id, payload):
             print(f'Feed ID: {feed_id} Data: {payload}')
 
         def subscribe(client_in, userdata, mid, granted_qos):
-            print("Subscribe thanh cong...")
+            print("INFO: Subscribe to the Adafruit server successfully")
 
-        client = AdafruitClient(self.aio_username, self.aio_key)
-        client.on_connect = connected
-        client.on_disconnect = disconnected
-        client.on_message = message
-        client.on_subscribe = subscribe
-        client.connect()
-        client.loop_background()
+        self.aio_client_socket = AdafruitClient(self.aio_username, self.aio_key)
+        self.aio_client_socket.on_connect = connected
+        self.aio_client_socket.on_disconnect = disconnected
+        self.aio_client_socket.on_message = message
+        self.aio_client_socket.on_subscribe = subscribe
+        self.aio_client_socket.connect()
+        self.aio_client_socket.loop_background()
     ######################################################################################
 
     # Main ###############################################################################
@@ -320,12 +383,12 @@ class Gateway:
         # Establish connection with the MQTT server
         self.connect_to_mqtt_server()
 
-        # Connect to Adafruit server
-        # adafruit_server_connection_thread = threading.Thread(target=self.adafruit_server_connection)
-        # adafruit_server_connection_thread.start()
-
-        # Publish all components
+        # Publish all components to the MQTT server
         self.publish_components_connection()
+
+        # Connect to Adafruit server for Dashboard
+        adafruit_server_connection_thread = threading.Thread(target=self.adafruit_server_connection)
+        adafruit_server_connection_thread.start()
 
         # Connect to MQTT server (create a MQTT connection thread)
         mqtt_server_connection_thread = threading.Thread(target=self.mqtt_server_connection)
@@ -335,15 +398,20 @@ class Gateway:
         serial_reader_thread = threading.Thread(target=self.read_serial)
         serial_reader_thread.start()
 
+        # Serial Reader thread
+        dangerous_detector_thread = threading.Thread(target=self.dangerous_detector)
+        dangerous_detector_thread.start()
+
         # Serial handle
         self.handle_serial()
     ######################################################################################
 
+
 mess = ''
 
 if __name__ == '__main__':
-    temp_gateway = Gateway('a', 'b')
+    temp_gateway = Gateway()
     temp_gateway.start()
+
     # End #
 
-    print(temp_gateway.device_list['alert-devices'][0].get_metrics())

@@ -25,6 +25,9 @@ class FireAlertDevice:
         self.status = 'safe'    # Todo: 'safe'/'dangerous-0'/'dangerous-2'/'dangerous-3'
 
     # Get attr ###############################################
+    def get_device_id(self):
+        return self.device_id
+
     def get_co_sensor_list(self):
         return self.co_sensor
 
@@ -86,7 +89,30 @@ class FireAlertDevice:
     ##########################################################
 
     # Update data ############################################
-    def update_all_data(self):
+    def inspect_new_status(self):
+        new_co_sensor_value = self.co_sensor.inspect_new_data()
+        new_fire_sensor_value = self.fire_sensor.inspect_new_data()
+        new_heat_sensor_value = self.heat_sensor.inspect_new_data()
+        new_smoke_sensor_value = self.smoke_sensor.inspect_new_data()
+        new_lpg_sensor_value = self.lpg_sensor.inspect_new_data()
+        ######################################################
+        # Todo: processing data
+        #       danger detection
+        try:
+            processed_data = (new_co_sensor_value + new_fire_sensor_value + new_heat_sensor_value +
+                              new_smoke_sensor_value + new_lpg_sensor_value)
+        except TypeError:           # None value (One or more sensors do not have new data )
+            return self.status      # Return old status
+        if processed_data > 128:
+            return 'dangerous-2'
+        elif processed_data > 64:
+            return 'dangerous-1'
+        elif processed_data > 32:
+            return 'dangerous-0'
+        else:
+            return 'safe'
+
+    def update_new_data(self):
         self.co_sensor.update_new_data()
         self.fire_sensor.update_new_data()
         self.heat_sensor.update_new_data()
@@ -149,17 +175,27 @@ class FireAlertDevice:
 if __name__ == '__main__':
     co_sensor_list = [None, None]
     co_sensor_0 = SensorComponent(feed_id='3', sensor_id=0, component_id=0, processed_data_threshold=-1, sensor_status=True)
-    co_sensor_1 = SensorComponent(feed_id='2', sensor_id=0, component_id=1, processed_data_threshold=-1, sensor_status=True)
+    fire_sensor_0 = SensorComponent(feed_id='2', sensor_id=0, component_id=0, processed_data_threshold=-1, sensor_status=True)
+    smoke_sensor_0 = SensorComponent(feed_id='2', sensor_id=0, component_id=0, processed_data_threshold=-1, sensor_status=True)
+    heat_sensor_0 = SensorComponent(feed_id='2', sensor_id=0, component_id=0, processed_data_threshold=-1, sensor_status=True)
+    lpg_sensor_0 = SensorComponent(feed_id='2', sensor_id=0, component_id=0, processed_data_threshold=-1, sensor_status=True)
     co_sensor_list[0] = co_sensor_0
-    co_sensor_list[1] = co_sensor_1
 
-    temp_device = FireAlertDevice(device_id=0, co_sensor=co_sensor_list[0])
+    temp_device = FireAlertDevice(device_id=0, co_sensor=co_sensor_list[0], fire_sensor=fire_sensor_0,
+                                  smoke_sensor=smoke_sensor_0, heat_sensor=heat_sensor_0, lpg_sensor=lpg_sensor_0)
     temp_device.put_data_co_sensor(2, 30)
     temp_device.put_data_co_sensor(1, 10)
-    temp_device.put_data_co_sensor(0, 10)
+    temp_device.put_data_co_sensor(0, 40)
     temp_device.put_data_co_sensor(0, 50)
+    temp_device.put_data_fire_sensor(0, 50)
+    temp_device.put_data_smoke_sensor(0, 50)
+    temp_device.put_data_heat_sensor(0, 50)
+    temp_device.put_data_lpg_sensor(0, 50)
 
-    temp_device.update_all_data()
+    print(f'Inspect status before updating: {temp_device.inspect_new_status()}')
+    print(f'Get status before updating: {temp_device.get_status()}')
+    temp_device.update_new_data()
+    print(f'------------------Updating------------------')
 
-    print(temp_device.co_sensor.get_processed_data())
-    print(temp_device.get_metrics())
+    print(f'Get processed data of the CO sensor: {temp_device.co_sensor.get_processed_data()}')
+    print(f'Get device metrics: {temp_device.get_metrics()}')

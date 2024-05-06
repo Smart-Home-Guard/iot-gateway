@@ -37,6 +37,9 @@ class AlertDevice:
             self.button_component.set_state(0)
             self.state = 0
 
+    def get_device_id(self):
+        return self.device_id
+
     def get_device_state(self):
         return self.state
 
