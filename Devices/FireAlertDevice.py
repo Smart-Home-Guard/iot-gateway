@@ -1,6 +1,7 @@
 from Components.SensorComponent import *
 from Components.ButtonComponent import *
 from Components.OutputComponent import *
+from Components.BatteryComponent import *
 
 
 class FireAlertDevice:
@@ -10,19 +11,20 @@ class FireAlertDevice:
                  heat_sensor=SensorComponent(),
                  smoke_sensor=SensorComponent(),
                  lpg_sensor=SensorComponent(),
-                 button_component=ButtonComponent(),
                  light_component=OutputComponent(),
-                 buzzer_component=OutputComponent()):
+                 buzzer_component=OutputComponent(),
+                 battery_component=BatteryComponent()):
         self.device_id = device_id
         self.co_sensor = co_sensor                  # 1 component
         self.fire_sensor = fire_sensor              # 1 component
         self.heat_sensor = heat_sensor              # 1 component
         self.smoke_sensor = smoke_sensor            # 1 component
         self.lpg_sensor = lpg_sensor                # 1 component
-        self.button_component = button_component    # 1 component
         self.light_component = light_component      # 1 component
         self.buzzer_component = buzzer_component    # 1 component
-        self.status = 'safe'    # Todo: 'safe'/'dangerous-0'/'dangerous-2'/'dangerous-3'
+        self.battery_component = battery_component
+        self.force_alert = 'none'   # 'none' / 'on' / 'off'
+        self.status = 'safe'        # 'safe' / 'dangerous'
 
     # Get attr ###############################################
     def get_device_id(self):
@@ -43,22 +45,47 @@ class FireAlertDevice:
     def get_lpg_sensor_list(self):
         return self.smoke_sensor
 
-    def get_button_list(self):
-        return self.button_component
-
     def get_light_list(self):
         return self.light_component
 
     def get_status(self):
         return self.status
 
+    def get_component_status(self):
+        component_status_dict = {
+            'fire': self.fire_sensor.sensor_status,
+            'co': self.co_sensor.sensor_status,
+            'smoke': self.smoke_sensor.sensor_status,
+            'lpg': self.lpg_sensor.sensor_status
+        }
+        return component_status_dict
+
     def get_metrics(self):
-        co_sensor_dict = self.co_sensor.get_metrics()
-        fire_sensor_dict = self.fire_sensor.get_metrics()
-        heat_sensor_dict = self.heat_sensor.get_metrics()
-        smoke_sensor_dict = self.smoke_sensor.get_metrics()
-        lpg_sensor_dict = self.lpg_sensor.get_metrics()
-        button_component_dict = self.button_component.get_metrics()
+        if not self.co_sensor == None:
+            co_sensor_dict = self.co_sensor.get_metrics()
+        else:
+            co_sensor_dict = None
+        if not self.fire_sensor == None:
+            fire_sensor_dict = self.fire_sensor.get_metrics()
+        else:
+            fire_sensor_dict = None
+        if not self.heat_sensor == None:
+            heat_sensor_dict = self.heat_sensor.get_metrics()
+        else:
+            heat_sensor_dict = None
+        if not self.smoke_sensor == None:
+            smoke_sensor_dict = self.smoke_sensor.get_metrics()
+        else:
+            smoke_sensor_dict = None
+
+        if not self.lpg_sensor == None:
+            lpg_sensor_dict = self.lpg_sensor.get_metrics()
+        else:
+            lpg_sensor_dict = None
+        # fire_sensor_dict = self.fire_sensor.get_metrics()
+        # heat_sensor_dict = self.heat_sensor.get_metrics()
+        # smoke_sensor_dict = self.smoke_sensor.get_metrics()
+        # lpg_sensor_dict = self.lpg_sensor.get_metrics()
         light_component_dict = self.light_component.get_metrics()
         buzzer_component_dict = self.buzzer_component.get_metrics()
         fire_alert_device_dict = {
@@ -67,50 +94,60 @@ class FireAlertDevice:
             'heat': [heat_sensor_dict],
             'smoke': [smoke_sensor_dict],
             'lpg': [lpg_sensor_dict],
-            'fire-button': [button_component_dict],
             'fire-light': [light_component_dict],
             'fire-buzzer': [buzzer_component_dict]
         }
         return fire_alert_device_dict
 
     def get_info(self):
-        co_sensor_dict = self.co_sensor.get_info()
-        fire_sensor_dict = self.fire_sensor.get_info()
-        heat_sensor_dict = self.heat_sensor.get_info()
-        smoke_sensor_dict = self.smoke_sensor.get_info()
-        lpg_sensor_dict = self.lpg_sensor.get_info()
-        button_component_dict = self.button_component.get_info()
+        if not self.co_sensor == None:
+            co_sensor_dict = self.co_sensor.get_metrics()
+        else:
+            co_sensor_dict = None
+        if not self.fire_sensor == None:
+            fire_sensor_dict = self.fire_sensor.get_metrics()
+        else:
+            fire_sensor_dict = None
+        if not self.heat_sensor == None:
+            heat_sensor_dict = self.heat_sensor.get_metrics()
+        else:
+            heat_sensor_dict = None
+        if not self.smoke_sensor == None:
+            smoke_sensor_dict = self.smoke_sensor.get_metrics()
+        else:
+            smoke_sensor_dict = None
+
+        if not self.lpg_sensor == None:
+            lpg_sensor_dict = self.lpg_sensor.get_metrics()
+        else:
+            lpg_sensor_dict = None
         light_component_dict = self.light_component.get_info()
         buzzer_component_dict = self.buzzer_component.get_info()
         fire_alert_device_info_array = [co_sensor_dict, fire_sensor_dict, heat_sensor_dict, smoke_sensor_dict,
-                                        lpg_sensor_dict, button_component_dict, light_component_dict,
+                                        lpg_sensor_dict, light_component_dict,
                                         buzzer_component_dict]
         return fire_alert_device_info_array
+
+    def get_battery_status(self):
+        return self.battery_component.get_metrics()
     ##########################################################
 
     # Update data ############################################
     def inspect_new_status(self):
-        new_co_sensor_value = self.co_sensor.inspect_new_data()
-        new_fire_sensor_value = self.fire_sensor.inspect_new_data()
-        new_heat_sensor_value = self.heat_sensor.inspect_new_data()
-        new_smoke_sensor_value = self.smoke_sensor.inspect_new_data()
-        new_lpg_sensor_value = self.lpg_sensor.inspect_new_data()
+        new_co_sensor_status = self.co_sensor.inspect_new_status()
+        new_fire_sensor_status = self.fire_sensor.inspect_new_status()
+        new_heat_sensor_status = self.heat_sensor.inspect_new_status()
+        new_smoke_sensor_status = self.smoke_sensor.inspect_new_status()
+        new_lpg_sensor_status = self.lpg_sensor.inspect_new_status()
         ######################################################
-        # Todo: processing data
-        #       danger detection
-        try:
-            processed_data = (new_co_sensor_value + new_fire_sensor_value + new_heat_sensor_value +
-                              new_smoke_sensor_value + new_lpg_sensor_value)
-        except TypeError:           # None value (One or more sensors do not have new data )
-            return self.status      # Return old status
-        if processed_data > 128:
-            return 'dangerous-2'
-        elif processed_data > 64:
-            return 'dangerous-1'
-        elif processed_data > 32:
-            return 'dangerous-0'
-        else:
+        if (new_co_sensor_status == 'safe' and
+            new_fire_sensor_status == 'safe' and
+            new_heat_sensor_status == 'safe' and
+            new_smoke_sensor_status == 'safe' and
+            new_lpg_sensor_status == 'safe'):
             return 'safe'
+        else:
+            return 'dangerous'
 
     def update_new_data(self):
         self.co_sensor.update_new_data()
@@ -118,23 +155,11 @@ class FireAlertDevice:
         self.heat_sensor.update_new_data()
         self.smoke_sensor.update_new_data()
         self.lpg_sensor.update_new_data()
-        co_sensor_value = self.co_sensor.get_processed_data()
-        fire_sensor_value = self.fire_sensor.get_processed_data()
-        heat_sensor_value = self.heat_sensor.get_processed_data()
-        smoke_sensor_value = self.smoke_sensor.get_processed_data()
-        lpg_sensor_value = self.lpg_sensor.get_processed_data()
         ######################################################
-        # Todo: processing data
-        #       danger detection
-        processed_data = co_sensor_value + fire_sensor_value + heat_sensor_value + smoke_sensor_value + lpg_sensor_value
-        if processed_data > 128:
-            self.status = 'dangerous-2'
-        elif processed_data > 64:
-            self.status = 'dangerous-1'
-        elif processed_data > 32:
-            self.status = 'dangerous-0'
-        else:
+        if self.is_all_sensors_safe():
             self.status = 'safe'
+        else:
+            self.status = 'dangerous'
         ####################################################
     ##########################################################
 
@@ -170,15 +195,42 @@ class FireAlertDevice:
             print(f'Warning: The component does not exist (LPG: {component_id})')
     ##########################################################
 
+    # Set Output component ###################################
+    def set_state_light_component(self, state_in):
+        self.light_component.set_state(state_in)
+
+    def set_state_buzzer_component(self, state_in):
+        self.buzzer_component.set_state(state_in)
+
+    def toggle_state_light_component(self):
+        self.light_component.toggle_state()
+
+    def toggle_state_buzzer_component(self):
+        self.buzzer_component.toggle_state()
+
+    def force_alert_on(self):
+        # Todo: force alert ons
+        pass
+    ##########################################################
+
+    # Misc ###############################################
+    def is_all_sensors_safe(self):
+        return (self.co_sensor.is_safe() == 'safe' and
+                self.fire_sensor.is_safe() == 'safe' and
+                self.heat_sensor.is_safe() == 'safe' and
+                self.smoke_sensor.is_safe() == 'safe' and
+                self.lpg_sensor.is_safe() == 'safe')
+    ##########################################################
+
 
 # Testing segment
 if __name__ == '__main__':
     co_sensor_list = [None, None]
-    co_sensor_0 = SensorComponent(feed_id='3', sensor_id=0, component_id=0, processed_data_threshold=-1, sensor_status=True)
-    fire_sensor_0 = SensorComponent(feed_id='2', sensor_id=0, component_id=0, processed_data_threshold=-1, sensor_status=True)
-    smoke_sensor_0 = SensorComponent(feed_id='2', sensor_id=0, component_id=0, processed_data_threshold=-1, sensor_status=True)
-    heat_sensor_0 = SensorComponent(feed_id='2', sensor_id=0, component_id=0, processed_data_threshold=-1, sensor_status=True)
-    lpg_sensor_0 = SensorComponent(feed_id='2', sensor_id=0, component_id=0, processed_data_threshold=-1, sensor_status=True)
+    co_sensor_0 = SensorComponent(feed_id='3', sensor_id=0, component_id=0, processed_data_threshold=60, sensor_enable=True)
+    fire_sensor_0 = SensorComponent(feed_id='2', sensor_id=0, component_id=0, processed_data_threshold=60, sensor_enable=True)
+    smoke_sensor_0 = SensorComponent(feed_id='2', sensor_id=0, component_id=0, processed_data_threshold=60, sensor_enable=True)
+    heat_sensor_0 = SensorComponent(feed_id='2', sensor_id=0, component_id=0, processed_data_threshold=60, sensor_enable=True)
+    lpg_sensor_0 = SensorComponent(feed_id='2', sensor_id=0, component_id=0, processed_data_threshold=49, sensor_enable=True)
     co_sensor_list[0] = co_sensor_0
 
     temp_device = FireAlertDevice(device_id=0, co_sensor=co_sensor_list[0], fire_sensor=fire_sensor_0,

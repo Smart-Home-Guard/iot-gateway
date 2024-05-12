@@ -6,7 +6,7 @@
           "feed_id": "smarthomeguard.shg-co",
           "sensor_id": 0,
           "component_id": 52,
-          "processed_data_threshold": -1
+          "processed_data_threshold": 100
         }
       ],
       "fire": [
@@ -14,7 +14,7 @@
           "feed_id": "smarthomeguard.shg-fire",
           "sensor_id": 0,
           "component_id": 54,
-          "processed_data_threshold": -1
+          "processed_data_threshold": 100
         }
       ],
       "smoke": [
@@ -22,7 +22,7 @@
           "feed_id": "smarthomeguard.shg-smoke",
           "sensor_id": 0,
           "component_id": 50,
-          "processed_data_threshold": -1
+          "processed_data_threshold": 100
         }
       ],
       "heat": [
@@ -30,22 +30,7 @@
           "feed_id": "smarthomeguard.shg-heat",
           "sensor_id": 0,
           "component_id": 51,
-          "processed_data_threshold": -1
-        }
-      ],
-      "lpg": [
-        {
-          "feed_id": "smarthomeguard.shg-lpg",
-          "sensor_id": 0,
-          "component_id": 53,
-          "processed_data_threshold": -1
-        }
-      ],
-      "button": [
-        {
-          "feed_id": "None",
-          "device_id": 0,
-          "component_id": 10
+          "processed_data_threshold": 100
         }
       ],
       "light": [
@@ -60,6 +45,44 @@
           "feed_id": "smarthomeguard.shg-fire-alert",
           "device_id": 0,
           "component_id": 14
+        }
+      ],
+      "battery": [
+        {
+          "device_id": 0,
+          "component_id": 27,
+          "rate_capacity": 40
+        }
+      ]
+    },
+    {
+      "lpg": [
+        {
+          "feed_id": "smarthomeguard.shg-lpg",
+          "sensor_id": 1,
+          "component_id": 53,
+          "processed_data_threshold": 100
+        }
+      ],
+      "light": [
+        {
+          "feed_id": "smarthomeguard.shg-fire-alert",
+          "device_id": 1,
+          "component_id": 12
+        }
+      ],
+      "buzzer": [
+        {
+          "feed_id": "smarthomeguard.shg-fire-alert",
+          "device_id": 1,
+          "component_id": 14
+        }
+      ],
+      "battery": [
+        {
+          "device_id": 1,
+          "component_id": 27,
+          "rate_capacity": 80
         }
       ]
     }
@@ -69,22 +92,29 @@
       "button": [
         {
           "feed_id": "None",
-          "device_id": 1,
+          "device_id": 2,
           "component_id": 10
         }
       ],
       "light": [
         {
           "feed_id": "None",
-          "device_id": 1,
+          "device_id": 2,
           "component_id": 12
         }
       ],
       "buzzer": [
         {
           "feed_id": "",
-          "device_id": 1,
+          "device_id": 2,
           "component_id": 14
+        }
+      ],
+      "battery": [
+        {
+          "device_id": 2,
+          "component_id": 27,
+          "rate_capacity": 90
         }
       ]
     }

@@ -3,7 +3,8 @@ class OutputComponent:
         self.feed_id = feed_id,
         self.device_id = device_id
         self.component_id = component_id
-        self.state = False
+        self.state = 0
+        self.access_lock = True
         self.component_enable = component_enable
 
     def get_state(self):
@@ -28,8 +29,25 @@ class OutputComponent:
             }
         return info_dict
 
+    def toggle_state(self):
+        # Waiting for lock to be freed
+        while self.access_lock == False:
+            continue
+        # Get the lock
+        self.access_lock = False
+        self.state = not self.state
+        # Release the lock
+        self.access_lock = True
+
     def set_state(self, state_in):
+        # Waiting for lock to be freed
+        while self.access_lock == False:
+            continue
+        # Get lock
+        self.access_lock = False
         if state_in == 0:
             self.state = 0
         else:
             self.state = 1
+        # Release the lock
+        self.access_lock = True

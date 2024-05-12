@@ -12,7 +12,7 @@ class SensorComponent:
         self.processed_data = 0
         self.processed_data_threshold = processed_data_threshold
         self.battery = BatteryComponent()
-        self.sensor_status = 'safe'     # 'safe' / 'dangerous-0' / 'dangerous-1' / 'dangerous-2' / 'dangerous-3'
+        self.sensor_status = 'safe'     # 'safe' / 'dangerous'
         self.sensor_enable = sensor_enable       # Enable
 
     def set_threshold(self, new_threshold_value):
@@ -25,16 +25,20 @@ class SensorComponent:
         return self.sensor_status
 
     def put_raw_data(self, value):
-        self.raw_data_buffer.append(value)
-        self.raw_data_updated += 1
+        if self.sensor_enable:
+            self.raw_data_buffer.append(value)
+            self.raw_data_updated += 1
 
     def get_processed_data(self):
-        return self.processed_data
+        if self.sensor_enable:
+            return self.processed_data
+        else:
+            return None
 
     def inspect_new_status(self):
         new_processed_data = self.inspect_new_data()
         if new_processed_data > self.processed_data_threshold:
-            return 'dangerous-0'
+            return 'dangerous'
         else:
             return 'safe'
 
@@ -45,22 +49,26 @@ class SensorComponent:
         return np.mean(sub_buffer)
 
     def update_new_data(self):
-        if self.raw_data_updated == 0:
-            # Return old data
-            return self.processed_data
-        # Get sub buffer of data buffer
-        sub_buffer = self.raw_data_buffer[len(self.raw_data_buffer) - self.raw_data_updated:len(self.raw_data_buffer)]
-        # Data processing (mean value)
-        new_processed_data = np.mean(sub_buffer)
-        # Clear buffer
-        self.raw_data_buffer.clear()
-        self.raw_data_updated = 0
-        # Update buffer
-        self.processed_data = new_processed_data
-        if self.processed_data > self.processed_data_threshold:
-            self.sensor_status = 'dangerous-0'
+        if self.sensor_enable:
+            if self.raw_data_updated == 0:
+                # Return old data
+                return self.processed_data
+            # Get sub buffer of data buffer
+            sub_buffer = self.raw_data_buffer[len(self.raw_data_buffer) - self.raw_data_updated:len(self.raw_data_buffer)]
+            # Data processing (mean value)
+            new_processed_data = np.mean(sub_buffer)
+            # Clear buffer
+            self.raw_data_buffer.clear()
+            self.raw_data_updated = 0
+            # Update buffer
+            self.processed_data = new_processed_data
+            print(f'INFO: New processed data of {self.sensor_id}:{self.component_id}: {new_processed_data}')
+            if self.processed_data > self.processed_data_threshold:
+                self.sensor_status = 'dangerous'
+            else:
+                self.sensor_status = 'safe'
         else:
-            self.sensor_status = 'safe'
+            return None
 
     def get_metrics(self):
         metrics_dict = {}
