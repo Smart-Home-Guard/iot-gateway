@@ -3,9 +3,10 @@ import numpy as np
 
 
 class SensorComponent:
-    def __init__(self, feed_id='None', sensor_id=0, component_id=0, processed_data_threshold=0x7fffffff, sensor_enable=False):
+    def __init__(self, feed_id='None', sensor_id=0, kind=0, component_id=0, processed_data_threshold=0x7fffffff, sensor_enable=False):
         self.feed_id = feed_id
         self.sensor_id = sensor_id
+        self.kind = kind
         self.component_id = component_id
         self.raw_data_buffer = []
         self.raw_data_updated = 0      # new data in the buffer
@@ -22,7 +23,7 @@ class SensorComponent:
         return self.raw_data_updated > 0
 
     def is_safe(self):
-        return self.sensor_status
+        return self.sensor_status == 'safe'
 
     def put_raw_data(self, value):
         if self.sensor_enable:
@@ -77,7 +78,7 @@ class SensorComponent:
                 'id': self.sensor_id,
                 'component': self.component_id,
                 'value': self.get_processed_data(),
-                'alert': self.is_safe()
+                'alert': int(not self.is_safe())
             }
         return metrics_dict
 
@@ -86,6 +87,7 @@ class SensorComponent:
         if self.sensor_enable:
             info_dict = {
                 'id': self.sensor_id,
+                'kind': self.kind,
                 'component': self.component_id
             }
         return info_dict

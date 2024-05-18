@@ -5,7 +5,8 @@
         {
           "feed_id": "smarthomeguard.shg-co",
           "sensor_id": 0,
-          "component_id": 52,
+          "kind": 52,
+          "component_id": 0,
           "processed_data_threshold": 100
         }
       ],
@@ -13,7 +14,8 @@
         {
           "feed_id": "smarthomeguard.shg-fire",
           "sensor_id": 0,
-          "component_id": 54,
+          "kind": 54,
+          "component_id": 1,
           "processed_data_threshold": 100
         }
       ],
@@ -21,7 +23,8 @@
         {
           "feed_id": "smarthomeguard.shg-smoke",
           "sensor_id": 0,
-          "component_id": 50,
+          "kind": 50,
+          "component_id": 2,
           "processed_data_threshold": 100
         }
       ],
@@ -29,7 +32,8 @@
         {
           "feed_id": "smarthomeguard.shg-heat",
           "sensor_id": 0,
-          "component_id": 51,
+          "kind": 51,
+          "component_id": 3,
           "processed_data_threshold": 100
         }
       ],
@@ -37,20 +41,22 @@
         {
           "feed_id": "smarthomeguard.shg-fire-alert",
           "device_id": 0,
-          "component_id": 12
+          "kind": 56,
+          "component_id": 4
         }
       ],
       "buzzer": [
         {
           "feed_id": "smarthomeguard.shg-fire-alert",
           "device_id": 0,
-          "component_id": 14
+          "kind": 57,
+          "component_id": 5
         }
       ],
       "battery": [
         {
           "device_id": 0,
-          "component_id": 27,
+          "component_id": 6,
           "rate_capacity": 40
         }
       ]
@@ -60,7 +66,8 @@
         {
           "feed_id": "smarthomeguard.shg-lpg",
           "sensor_id": 1,
-          "component_id": 53,
+          "kind": 53,
+          "component_id": 7,
           "processed_data_threshold": 100
         }
       ],
@@ -68,20 +75,22 @@
         {
           "feed_id": "smarthomeguard.shg-fire-alert",
           "device_id": 1,
-          "component_id": 12
+          "kind": 56,
+          "component_id": 8
         }
       ],
       "buzzer": [
         {
           "feed_id": "smarthomeguard.shg-fire-alert",
           "device_id": 1,
-          "component_id": 14
+          "kind": 57,
+          "component_id": 9
         }
       ],
       "battery": [
         {
           "device_id": 1,
-          "component_id": 27,
+          "component_id": 10,
           "rate_capacity": 80
         }
       ]
@@ -93,13 +102,15 @@
         {
           "feed_id": "None",
           "device_id": 2,
-          "component_id": 10
+          "kind": 55,
+          "component_id": 11
         }
       ],
       "light": [
         {
           "feed_id": "None",
           "device_id": 2,
+          "kind": 56,
           "component_id": 12
         }
       ],
@@ -107,13 +118,14 @@
         {
           "feed_id": "",
           "device_id": 2,
-          "component_id": 14
+          "kind": 57,
+          "component_id": 13
         }
       ],
       "battery": [
         {
           "device_id": 2,
-          "component_id": 27,
+          "component_id": 14,
           "rate_capacity": 90
         }
       ]

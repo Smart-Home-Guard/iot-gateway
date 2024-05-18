@@ -43,3 +43,15 @@ def decode_node_value(node_value, component_enc):
         return round(ppm, 2)
     else:
         return node_value
+
+
+def dumps_array(array_in):
+    try:
+        if array_in == None:
+            return []
+        if array_in[0] == {} or array_in[0] == None:
+            return []
+        return array_in
+    except:
+        print('---------------', array_in)
+

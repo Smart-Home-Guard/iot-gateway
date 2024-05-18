@@ -10,6 +10,7 @@ class AlertDevice:
         self.button_component = button_component
         self.buzzer_component = buzzer_component
         self.battery_component = battery_component
+        self.mute_alert_buzzer = 0     # 1-'on' / 0-'off'
         self.state = 0   # (1-'alert' / 0-'safe')
 
     #################################################################
@@ -27,6 +28,9 @@ class AlertDevice:
     def get_device_state(self):
         return self.state
 
+    def get_mute_alert_buzzer_state(self):
+        return self.mute_alert_buzzer
+
     def toggle_button_component_state(self):
         self.button_component.toggle_state()
         button_state = self.button_component.get_state()
@@ -43,17 +47,26 @@ class AlertDevice:
         # Update device state
         self.state = button_state
 
+    def set_mute_alert_buzzer(self, option):
+        self.mute_alert_buzzer = option
+        self.buzzer_component.set_mute_alert(option=option)
+
+    # Info #########################################
     def get_metrics(self):
         metrics_dict = {
-            'fire-button': self.button_component.get_metrics(),
-            'fire-buzzer': self.buzzer_component.get_metrics()
+            'fire-button': [self.button_component.get_metrics()],
+            'fire-buzzer': [self.buzzer_component.get_metrics()]
         }
         return metrics_dict
 
     def get_info(self):
         alert_device_info = [self.button_component.get_info(),
                              self.buzzer_component.get_info()]
-        return alert_device_info
+        device_info_list = []
+        for device_info in alert_device_info:
+            if not device_info == {}:
+                device_info_list.append(device_info)
+        return device_info_list
 
     def get_battery_status(self):
         return self.battery_component.get_metrics()

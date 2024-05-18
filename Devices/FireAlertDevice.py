@@ -23,7 +23,8 @@ class FireAlertDevice:
         self.light_component = light_component      # 1 component
         self.buzzer_component = buzzer_component    # 1 component
         self.battery_component = battery_component
-        self.force_alert = 'none'   # 'none' / 'on' / 'off'
+        self.mute_alert_light = 0
+        self.mute_alert_buzzer = 0
         self.status = 'safe'        # 'safe' / 'dangerous'
 
     # Get attr ###############################################
@@ -48,15 +49,25 @@ class FireAlertDevice:
     def get_light_list(self):
         return self.light_component
 
+    def get_buzzer_list(self):
+        return self.buzzer_component
     def get_status(self):
         return self.status
+
+    def get_mute_alert_light_state(self):
+        return self.mute_alert_light
+
+    def get_mute_alert_buzzer_state(self):
+        return self.mute_alert_buzzer
 
     def get_component_status(self):
         component_status_dict = {
             'fire': self.fire_sensor.sensor_status,
             'co': self.co_sensor.sensor_status,
             'smoke': self.smoke_sensor.sensor_status,
-            'lpg': self.lpg_sensor.sensor_status
+            'lpg': self.lpg_sensor.sensor_status,
+            'light': self.light_component.get_state(),
+            'buzzer': self.buzzer_component.get_state()
         }
         return component_status_dict
 
@@ -101,24 +112,24 @@ class FireAlertDevice:
 
     def get_info(self):
         if not self.co_sensor == None:
-            co_sensor_dict = self.co_sensor.get_metrics()
+            co_sensor_dict = self.co_sensor.get_info()
         else:
             co_sensor_dict = None
         if not self.fire_sensor == None:
-            fire_sensor_dict = self.fire_sensor.get_metrics()
+            fire_sensor_dict = self.fire_sensor.get_info()
         else:
             fire_sensor_dict = None
         if not self.heat_sensor == None:
-            heat_sensor_dict = self.heat_sensor.get_metrics()
+            heat_sensor_dict = self.heat_sensor.get_info()
         else:
             heat_sensor_dict = None
         if not self.smoke_sensor == None:
-            smoke_sensor_dict = self.smoke_sensor.get_metrics()
+            smoke_sensor_dict = self.smoke_sensor.get_info()
         else:
             smoke_sensor_dict = None
 
         if not self.lpg_sensor == None:
-            lpg_sensor_dict = self.lpg_sensor.get_metrics()
+            lpg_sensor_dict = self.lpg_sensor.get_info()
         else:
             lpg_sensor_dict = None
         light_component_dict = self.light_component.get_info()
@@ -126,7 +137,11 @@ class FireAlertDevice:
         fire_alert_device_info_array = [co_sensor_dict, fire_sensor_dict, heat_sensor_dict, smoke_sensor_dict,
                                         lpg_sensor_dict, light_component_dict,
                                         buzzer_component_dict]
-        return fire_alert_device_info_array
+        device_info_list = []
+        for device_info in fire_alert_device_info_array:
+            if not device_info == {}:
+                device_info_list.append(device_info)
+        return device_info_list
 
     def get_battery_status(self):
         return self.battery_component.get_metrics()
@@ -165,34 +180,19 @@ class FireAlertDevice:
 
     # Put data ###############################################
     def put_data_co_sensor(self, component_id, value):
-        if self.co_sensor.component_id == component_id:
-            self.co_sensor.put_raw_data(value)
-        else:
-            print(f'Warning: The component does not exist (CO: {component_id})')
+        self.co_sensor.put_raw_data(value)
 
     def put_data_fire_sensor(self, component_id, value):
-        if self.fire_sensor.component_id == component_id:
-            self.fire_sensor.put_raw_data(value)
-        else:
-            print(f'Warning: The component does not exist (Fire: {component_id})')
+        self.fire_sensor.put_raw_data(value)
 
     def put_data_heat_sensor(self, component_id, value):
-        if self.heat_sensor.component_id == component_id:
-            self.heat_sensor.put_raw_data(value)
-        else:
-            print(f'Warning: The component does not exist (Heat: {component_id})')
+        self.heat_sensor.put_raw_data(value)
 
     def put_data_smoke_sensor(self, component_id, value):
-        if self.smoke_sensor.component_id == component_id:
-            self.smoke_sensor.put_raw_data(value)
-        else:
-            print(f'Warning: The component does not exist (Smoke: {component_id})')
+        self.smoke_sensor.put_raw_data(value)
 
     def put_data_lpg_sensor(self, component_id, value):
-        if self.lpg_sensor.component_id == component_id:
-            self.lpg_sensor.put_raw_data(value)
-        else:
-            print(f'Warning: The component does not exist (LPG: {component_id})')
+        self.lpg_sensor.put_raw_data(value)
     ##########################################################
 
     # Set Output component ###################################
@@ -208,9 +208,13 @@ class FireAlertDevice:
     def toggle_state_buzzer_component(self):
         self.buzzer_component.toggle_state()
 
-    def force_alert_on(self):
-        # Todo: force alert ons
-        pass
+    def set_mute_alert_light(self, option):
+        self.mute_alert_light = option
+        self.light_component.set_mute_alert(option=option)
+
+    def set_mute_alert_buzzer(self, option):
+        self.mute_alert_buzzer = option
+        self.buzzer_component.set_mute_alert(option=option)
     ##########################################################
 
     # Misc ###############################################

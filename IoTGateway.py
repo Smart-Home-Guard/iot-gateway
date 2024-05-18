@@ -71,6 +71,7 @@ class Gateway:
                         device_id = co_sensor_info['sensor_id']
                         co_sensor = SensorComponent(feed_id=co_sensor_info['feed_id'],
                                                     sensor_id=co_sensor_info['sensor_id'],
+                                                    kind=co_sensor_info['kind'],
                                                     component_id=co_sensor_info['component_id'],
                                                     processed_data_threshold=co_sensor_info['processed_data_threshold'],
                                                     sensor_enable=True)
@@ -83,6 +84,7 @@ class Gateway:
                         device_id = fire_sensor_info['sensor_id']
                         fire_sensor = SensorComponent(feed_id=fire_sensor_info['feed_id'],
                                                       sensor_id=fire_sensor_info['sensor_id'],
+                                                      kind=fire_sensor_info['kind'],
                                                       component_id=fire_sensor_info['component_id'],
                                                       processed_data_threshold=fire_sensor_info['processed_data_threshold'],
                                                       sensor_enable=True)
@@ -95,6 +97,7 @@ class Gateway:
                         device_id = heat_sensor_info['sensor_id']
                         heat_sensor = SensorComponent(feed_id=heat_sensor_info['feed_id'],
                                                       sensor_id=heat_sensor_info['sensor_id'],
+                                                      kind=heat_sensor_info['kind'],
                                                       component_id=heat_sensor_info['component_id'],
                                                       processed_data_threshold=heat_sensor_info['processed_data_threshold'],
                                                       sensor_enable=True)
@@ -107,6 +110,7 @@ class Gateway:
                         device_id = smoke_sensor_info['sensor_id']
                         smoke_sensor = SensorComponent(feed_id=smoke_sensor_info['feed_id'],
                                                        sensor_id=smoke_sensor_info['sensor_id'],
+                                                       kind=smoke_sensor_info['kind'],
                                                        component_id=smoke_sensor_info['component_id'],
                                                        processed_data_threshold=smoke_sensor_info['processed_data_threshold'],
                                                        sensor_enable=True)
@@ -119,6 +123,7 @@ class Gateway:
                         device_id = lpg_sensor_info['sensor_id']
                         lpg_sensor = SensorComponent(feed_id=lpg_sensor_info['feed_id'],
                                                      sensor_id=lpg_sensor_info['sensor_id'],
+                                                     kind=lpg_sensor_info['kind'],
                                                      component_id=lpg_sensor_info['component_id'],
                                                      processed_data_threshold=lpg_sensor_info['processed_data_threshold'],
                                                      sensor_enable=True)
@@ -131,6 +136,7 @@ class Gateway:
                         device_id = light_component_info['device_id']
                         light_component = OutputComponent(feed_id=light_component_info['feed_id'],
                                                           device_id=light_component_info['device_id'],
+                                                          kind=light_component_info['kind'],
                                                           component_id=light_component_info['component_id'],
                                                           component_enable=True)
                         print(f'INFO: Create LIGHT component with device ID {light_component_info['device_id']} '
@@ -142,6 +148,7 @@ class Gateway:
                         device_id = buzzer_component_info['device_id']
                         buzzer_component = OutputComponent(feed_id=buzzer_component_info['feed_id'],
                                                            device_id=buzzer_component_info['device_id'],
+                                                           kind=buzzer_component_info['kind'],
                                                            component_id=buzzer_component_info['component_id'],
                                                            component_enable=True)
                         print(f'INFO: Create BUZZER component with device ID {buzzer_component_info['device_id']} '
@@ -176,6 +183,7 @@ class Gateway:
                     device_id = button_component_info['device_id']
                     button_component = ButtonComponent(feed_id=button_component_info['feed_id'],
                                                        device_id=button_component_info['device_id'],
+                                                       kind=button_component_info['kind'],
                                                        component_id=button_component_info['component_id'],
                                                        component_enable=True)
                     print(f'INFO: Create BUTTON component with device ID {button_component_info['device_id']} '
@@ -186,6 +194,7 @@ class Gateway:
                     device_id = buzzer_component_info['device_id']
                     buzzer_component = OutputComponent(feed_id=buzzer_component_info['feed_id'],
                                                        device_id=buzzer_component_info['device_id'],
+                                                       kind=buzzer_component_info['kind'],
                                                        component_id=buzzer_component_info['component_id'],
                                                        component_enable=True)
                     print(f'INFO: Create BUZZER component with device ID {buzzer_component_info['device_id']} '
@@ -249,10 +258,11 @@ class Gateway:
     # Get attr of the object ####################################################################
     def get_components_list(self):
         components_list = []
-        for device in self.device_list['fire-alert-devices']:
-            components_list = components_list + device.get_info()
-        for device in self.device_list['alert-devices']:
-            components_list = components_list + device.get_info()
+        for device_type in self.device_list:
+            for device in self.device_list[device_type]:
+                device_info = device.get_info()
+                if not device_info == {}:
+                    components_list = components_list + device_info
         # print(components_list)
         return components_list
     #############################################################################################
@@ -262,7 +272,7 @@ class Gateway:
         if channel_type == 'fire-alert':
             return self.mqtt_client_id + '/fire-alert-metrics'
         elif channel_type == 'devices-status':
-            return self.mqtt_client_id + 'devices-status-metrics'
+            return self.mqtt_client_id + '/device-status-metrics'
         return ''
 
     def publish_components_server(self):
@@ -276,6 +286,7 @@ class Gateway:
                 'data': components_list
             }
         }
+        print(f'DEBUG: Component list {components_list}')
         print(f'INFO: Publish all components to the MQTT server (message: {message})')
         # self.mqtt_client_socket.publish(topic=message_topic, payload=json.dumps(message))
         try:
@@ -291,16 +302,17 @@ class Gateway:
             'kind': message_kind,    # 0-manual update; 1-alert
             "payload": {
                 "token": self.mqtt_client_token,
-                "fire": fire_sensor_list,
-                "smoke": smoke_sensor_list,
-                "co": co_sensor_list,
-                "heat": heat_sensor_list,
-                "lpg": lpg_component_list,
-                "fire-button": button_component_list,
-                "fire-light": light_component_list,
-                "fire-buzzer": buzzer_component_list
+                "fire": dumps_array(fire_sensor_list),
+                "smoke": dumps_array(smoke_sensor_list),
+                "co": dumps_array(co_sensor_list),
+                "heat": dumps_array(heat_sensor_list),
+                "lpg": dumps_array(lpg_component_list),
+                "fire-button": dumps_array(button_component_list),
+                "fire-light": dumps_array(light_component_list),
+                "fire-buzzer": dumps_array(buzzer_component_list)
             },
         }
+        print(f'INFO: Send a message to the MQTT server with topic \'{message_topic}\' and content \'{json.dumps(message)}\' ')
         try:
             self.mqtt_client_socket.publish(topic=message_topic, payload=json.dumps(message))
         except:
@@ -327,19 +339,30 @@ class Gateway:
                                              lpg_component_list=device_metrics['lpg'],
                                              light_component_list=device_metrics['fire-light'],
                                              buzzer_component_list=device_metrics['fire-buzzer'])
-                print(f'INFO: Publish device metrics (msg_kind = {message_kind}) with payload: {device_metrics}')
                 # Update to the device
                 component_status_dict = device.get_component_status()
                 fire_light_alert = component_status_dict['fire'] == 'dangerous'
                 co_light_alert = component_status_dict['co'] == 'dangerous'
                 smoke_light_alert = component_status_dict['smoke'] == 'dangerous'
                 lpg_light_alert = component_status_dict['lpg'] == 'dangerous'
+                buzzer_alert = fire_light_alert or co_light_alert or smoke_light_alert or lpg_light_alert
+                # device = FireAlertDevice()
+                # Mute filter
+                if device.get_mute_alert_light_state(): # if mute is True
+                    fire_light_alert = 0
+                    co_light_alert = 0
+                    smoke_light_alert = 0
+                    lpg_light_alert = 0
+                if device.get_mute_alert_buzzer_state():
+                    buzzer_alert = 0
                 command_to_serial = ('!' + '1' + ':' +
                                      str(device.get_device_id()) + ':' +
                                      str(int(co_light_alert)) + ':' +
                                      str(int(smoke_light_alert)) + ':' +
                                      str(int(fire_light_alert)) + ':' +
-                                     str(int(lpg_light_alert)) + '#')
+                                     str(int(lpg_light_alert)) + ':' +
+                                     str(int(buzzer_alert)) +
+                                     '#')
                 print(f'INFO: Write to the serial: {command_to_serial}')
                 if not self.WITHOUT_SERIAL_CONNECTION:
                     self.serial_obj.write(command_to_serial.encode('utf-8'))
@@ -421,6 +444,11 @@ class Gateway:
                     else:
                         mess = mess[end + 1:]
 
+    def handle_serial(self):
+        while True:
+            if self.serial_message_buffer.qsize() > 0:
+                self.handle_serial_message(self.serial_message_buffer.get())
+
     def handle_serial_message(self, serial_message):
         # Put data to buffer
         # Parser
@@ -497,7 +525,7 @@ class Gateway:
                         # Toggle the button (only toggle)
                         device.toggle_button_component_state()
                         cur_buzzer_metrics = device.get_metrics()['fire-buzzer']
-                        cur_buzzer_value = cur_buzzer_metrics['value']
+                        cur_buzzer_value = cur_buzzer_metrics[0]['value']
                         message_kind = 0
                         if cur_buzzer_value:    # Alert kind
                             message_kind = KENUM_ALERT_FIRE_DANGER
@@ -523,18 +551,13 @@ class Gateway:
         #     co_value = decode_node_value(int(co_str), 'co')
 
         return
-
-    def handle_serial(self):
-        while True:
-            if self.serial_message_buffer.qsize() > 0:
-                self.handle_serial_message(self.serial_message_buffer.get())
     ################################################################################################
 
     # Server connection Thread #############################################################################
     def connect_to_mqtt_server(self):
         self.mqtt_client_socket = mqtt.Client(self.mqtt_client_id)
         try:
-            self.mqtt_client_socket.connect('test.mosquitto.org')
+            self.mqtt_client_socket.connect('14.225.192.183')
             print('INFO: Connect to the MQTT server successfully')
         except:
             print('ERROR: Can not connect to the MQTT server')
@@ -555,6 +578,33 @@ class Gateway:
     def handle_mqtt_server_message(self, message):
         # Todo: Handle MQTT message (from user)
         print(f'INFO: Received a message from MQTT server with content {message}')
+        # If mute is On -> send UART message to turn off the output component
+        device_id = message['device-id']
+        component_id = message['component-id']
+        command = message['command']
+        for device_type in self.device_list:
+            for device in self.device_list[device_type]:
+                # device = FireAlertDevice()
+                if device.get_device_id() == device_id:
+                    # Extract device metrics
+                    device_metrics = device.get_component_status()
+                    if device.get_light_list().get_component_id() == component_id:
+                        device.set_mute_alert_light(command)
+                        print(f'INFO: Mute the alert light of the device with ID {device_id}')
+                    elif device.get_buzzer_list().get_component_id() == component_id:
+                        device.set_mute_alert_buzzer(command)
+                        print(f'INFO: Mute the alert buzzer of the device with ID {device_id}')
+                    else:
+                        print(f'ERROR: Can not mute the component with device ID {device_id} and component ID {component_id}')
+
+                    # --: update alert-device immediately
+                    if device_type == 'alert-devices':  # If alert-device -> Update immediately
+                        buzzer_alert = device_metrics['fire-buzzer'][0]['alert']
+                        command_to_serial = ('!' + '1' + ':' +
+                                             str(device.get_device_id()) + ':' +
+                                             str(buzzer_alert) +
+                                             '#')
+
         pass
 
     def adafruit_server_connection(self):

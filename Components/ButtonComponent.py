@@ -1,7 +1,8 @@
 class ButtonComponent:
-    def __init__(self, feed_id=None, device_id=None, component_id=None, component_enable=False):
+    def __init__(self, feed_id=None, device_id=None, kind=0, component_id=None, component_enable=False):
         self.feed_id = feed_id,
         self.device_id = device_id
+        self.kind = kind
         self.component_id = component_id
         self.state = 0
         self.component_enable = component_enable
@@ -15,7 +16,8 @@ class ButtonComponent:
             metrics = {
                 'id': self.device_id,
                 'component': self.component_id,
-                'value': self.state
+                'value': self.state,
+                'alert': self.state
             }
         return metrics
 
@@ -24,12 +26,13 @@ class ButtonComponent:
         if self.component_enable:
             info_dict = {
                 'id': self.device_id,
+                'kind': self.kind,
                 'component': self.component_id
             }
         return info_dict
 
     def toggle_state(self):
-        self.state = not self.state
+        self.state = int(not self.state)
 
     def set_state(self, state_in):
         if state_in == 0:
