@@ -19,7 +19,8 @@ from Misc.Miscellaneous import *
 
 class Gateway:
     # Mode configuration
-    WITHOUT_SERIAL_CONNECTION = True
+    SERIAL_ENABLE = True
+    ADAFRUIT_ENABLE = False
 
     def __init__(self):
         # MQTT Server
@@ -35,8 +36,9 @@ class Gateway:
         # Device list
         self.device_list = {'fire-alert-devices': [], 'alert-devices': []}
         # Serial
-        self.serial_obj = None
-        self.serial_message_buffer = queue.Queue()
+        self.serial_list = {}   # {<device_id_1>: {'port_number': <port_number>, 'baudrate': <baudrate>}, '<device_id_2>': {'port_number': <port_number>, 'baudrate': <baudrate>}}
+        self.serial_commands_buffer = queue.Queue()     # To buffer all commands from UART (completed message)
+        self.serial_message_buffer = {}                 # To buffer all character for each UART interface
 
     # Set up connection #################################################################
     def load_client_info(self, mqtt_client_info_path, aio_user_info_path):
@@ -162,11 +164,17 @@ class Gateway:
                         battery_component = BatteryComponent(device_id=battery_component_info['device_id'],
                                                              component_id=battery_component_info['component_id'],
                                                              rate_capacity=battery_component_info['rate_capacity'])
-
+                physical_link_info = None
+                if 'physical_link' in fire_alert_device:
+                    if len(fire_alert_device['physical_link']) > 0:
+                        physical_link_info = fire_alert_device['physical_link'][0]
+                else:
+                    print(f'ERROR: Can not find the physical link of the device with ID {device_id}')
                 fire_alert_device = FireAlertDevice(device_id=device_id, co_sensor=co_sensor, fire_sensor=fire_sensor,
                                                     heat_sensor=heat_sensor, smoke_sensor=smoke_sensor,
                                                     lpg_sensor=lpg_sensor, light_component=light_component,
-                                                    buzzer_component=buzzer_component, battery_component=battery_component)
+                                                    buzzer_component=buzzer_component,
+                                                    battery_component=battery_component, physical_link=physical_link_info)
                 print(f'INFO: Create a fire-alert device with ID {fire_alert_device.get_device_id()}')
                 self.device_list['fire-alert-devices'].append(fire_alert_device)
         else:
@@ -208,19 +216,36 @@ class Gateway:
                         battery_component = BatteryComponent(device_id=battery_component_info['device_id'],
                                                              component_id=battery_component_info['component_id'],
                                                              rate_capacity=battery_component_info['rate_capacity'])
-
+                physical_link_info = None
+                if 'physical_link' in alert_device:
+                    if len(alert_device['physical_link']) > 0:
+                        physical_link_info = alert_device['physical_link'][0]
+                else:
+                    print(f'ERROR: Can not find the physical link of the device with ID {device_id}')
                 alert_device = AlertDevice(device_id=device_id, button_component=button_component,
-                                           buzzer_component=buzzer_component, battery_component=battery_component)
+                                           buzzer_component=buzzer_component, battery_component=battery_component,
+                                           physical_link=physical_link_info)
                 print(f'INFO: Create a alert device with ID {alert_device.get_device_id()}')
                 self.device_list['alert-devices'].append(alert_device)
         else:
             print(f'Warning: Missing Alert device information')
 
     def init_serial(self):
-        if not self.WITHOUT_SERIAL_CONNECTION:
+        if self.SERIAL_ENABLE:
+            for device_type in self.device_list:
+                for device in self.device_list[device_type]:
+                    # device = FireAlertDevice()
+                    device_physical_link_info = device.get_physical_link()
+                    serial_obj = serial.Serial(port=device_physical_link_info['port_number'],
+                                               baudrate=device_physical_link_info['baudrate'])
+                    self.serial_list[device.get_device_id()] = serial_obj
+                    self.serial_message_buffer[serial_obj.port] = ''
+                    print(f'INFO: Create the physical interface of device with ID {device.get_device_id()} '
+                          f'(port: {device_physical_link_info['port_number']} '
+                          f'and baudrate: {device_physical_link_info['baudrate']}).')
             # Serial connection
-            self.serial_obj = serial.Serial(port="COM17", baudrate=115200)  # COM17 - COM15
-        return 'None'
+            # self.serial_obj = serial.Serial(port="COM6", baudrate=115200)  # COM17 - COM15
+
     ######################################################################################
 
     # Miscellaneous #############################################################################
@@ -364,8 +389,9 @@ class Gateway:
                                      str(int(buzzer_alert)) +
                                      '#')
                 print(f'INFO: Write to the serial: {command_to_serial}')
-                if not self.WITHOUT_SERIAL_CONNECTION:
-                    self.serial_obj.write(command_to_serial.encode('utf-8'))
+                if self.SERIAL_ENABLE:
+                    # self.serial_obj.write(command_to_serial.encode('utf-8'))
+                    self.serial_list[device.get_device_id()].write(command_to_serial.encode('utf-8'))
 
     def dangerous_detector(self):   # For 'fire-alert-device'
         while True:
@@ -419,35 +445,44 @@ class Gateway:
     #############################################################################################
 
     # Serial thread #############################################################################
-    def read_serial(self):
+    def serial_reader(self):
+        for device_id in self.serial_list:
+            serial_obj = self.serial_list[device_id]
+            serial_obj_reader_thread = threading.Thread(target=self.serial_obj_reader, args=(serial_obj,))
+            serial_obj_reader_thread.start()
+            print(f'DEBUG: ----Create a new thread to communicate with UART interface (port: {serial_obj.port})')
+        # while True:     # Do not close parent thread :(
+        #     continue
+
+    def serial_obj_reader(self, serial_obj):
         while True:
-            if not self.WITHOUT_SERIAL_CONNECTION:
-                bytes_to_read = self.serial_obj.in_waiting
+            if self.SERIAL_ENABLE:
+                bytes_to_read = serial_obj.in_waiting
             else:
                 bytes_to_read = input('Your commands: \n')
 
-            if len(bytes_to_read) > 0:
-                global mess
-                if not self.WITHOUT_SERIAL_CONNECTION:
-                    mess = mess + self.serial_obj.read(bytes_to_read).decode("UTF-8")
+            if bytes_to_read > 0:
+                if self.SERIAL_ENABLE:
+                    self.serial_message_buffer[serial_obj.port] = (self.serial_message_buffer[serial_obj.port] +
+                                                                   serial_obj.read(bytes_to_read).decode("UTF-8"))
                 else:
-                    mess = mess + bytes_to_read
+                    self.serial_message_buffer[serial_obj.port] = self.serial_message_buffer[serial_obj.port] + bytes_to_read
                 # print(mess + "\n")
-                while ("#" in mess) and ("!" in mess):
-                    start = mess.find("!")
-                    end = mess.find("#")
-                    print(f'INFO: Received a command with content {mess[start:end + 1]}')
-                    self.serial_message_buffer.put(mess[start:end + 1])
+                while ("#" in self.serial_message_buffer[serial_obj.port]) and ("!" in self.serial_message_buffer[serial_obj.port]):
+                    start = self.serial_message_buffer[serial_obj.port].find("!")
+                    end = self.serial_message_buffer[serial_obj.port].find("#")
+                    print(f'INFO: Received a command with content {self.serial_message_buffer[serial_obj.port][start:end + 1]}')
+                    self.serial_commands_buffer.put(self.serial_message_buffer[serial_obj.port][start:end + 1])
                     # self.processing_data(mess[start:end + 1])
-                    if end == len(mess):
-                        mess = ""
+                    if end == len(self.serial_message_buffer[serial_obj.port]):
+                        self.serial_message_buffer[serial_obj.port] = ""
                     else:
-                        mess = mess[end + 1:]
+                        self.serial_message_buffer[serial_obj.port] = self.serial_message_buffer[serial_obj.port][end + 1:]
 
     def handle_serial(self):
         while True:
-            if self.serial_message_buffer.qsize() > 0:
-                self.handle_serial_message(self.serial_message_buffer.get())
+            if self.serial_commands_buffer.qsize() > 0:
+                self.handle_serial_message(self.serial_commands_buffer.get())
 
     def handle_serial_message(self, serial_message):
         # Put data to buffer
@@ -641,7 +676,7 @@ class Gateway:
         self.load_device_info('DeviceInfo.json')
 
         # Set up serial connection
-        ser = self.init_serial()
+        self.init_serial()
 
         # Establish connection with the MQTT server
         self.connect_to_mqtt_server()
@@ -650,15 +685,16 @@ class Gateway:
         self.publish_components_server()
 
         # Connect to Adafruit server for Dashboard
-        adafruit_server_connection_thread = threading.Thread(target=self.adafruit_server_connection)
-        adafruit_server_connection_thread.start()
+        if self.ADAFRUIT_ENABLE:
+            adafruit_server_connection_thread = threading.Thread(target=self.adafruit_server_connection)
+            adafruit_server_connection_thread.start()
 
         # Connect to MQTT server (create a MQTT connection thread)
         mqtt_server_connection_thread = threading.Thread(target=self.mqtt_server_connection)
         mqtt_server_connection_thread.start()
 
         # Serial Reader thread
-        serial_reader_thread = threading.Thread(target=self.read_serial)
+        serial_reader_thread = threading.Thread(target=self.serial_reader)
         serial_reader_thread.start()
 
         # Manual update device metrics
@@ -673,8 +709,6 @@ class Gateway:
         self.handle_serial()
     ######################################################################################
 
-
-mess = ''
 
 if __name__ == '__main__':
     gateway = Gateway()

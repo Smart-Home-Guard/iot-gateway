@@ -13,7 +13,8 @@ class FireAlertDevice:
                  lpg_sensor=SensorComponent(),
                  light_component=OutputComponent(),
                  buzzer_component=OutputComponent(),
-                 battery_component=BatteryComponent()):
+                 battery_component=BatteryComponent(),
+                 physical_link=None):
         self.device_id = device_id
         self.co_sensor = co_sensor                  # 1 component
         self.fire_sensor = fire_sensor              # 1 component
@@ -26,6 +27,7 @@ class FireAlertDevice:
         self.mute_alert_light = 0
         self.mute_alert_buzzer = 0
         self.status = 'safe'        # 'safe' / 'dangerous'
+        self.physical_link = physical_link
 
     # Get attr ###############################################
     def get_device_id(self):
@@ -51,8 +53,12 @@ class FireAlertDevice:
 
     def get_buzzer_list(self):
         return self.buzzer_component
+
     def get_status(self):
         return self.status
+
+    def get_physical_link(self):
+        return self.physical_link
 
     def get_mute_alert_light_state(self):
         return self.mute_alert_light

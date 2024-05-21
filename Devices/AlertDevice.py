@@ -5,13 +5,14 @@ from Components.BatteryComponent import *
 
 class AlertDevice:
     def __init__(self, device_id=None, button_component=ButtonComponent(),
-                 buzzer_component=OutputComponent(), battery_component=BatteryComponent()):
+                 buzzer_component=OutputComponent(), battery_component=BatteryComponent(), physical_link=None):
         self.device_id = device_id
         self.button_component = button_component
         self.buzzer_component = buzzer_component
         self.battery_component = battery_component
         self.mute_alert_buzzer = 0     # 1-'on' / 0-'off'
         self.state = 0   # (1-'alert' / 0-'safe')
+        self.physical_link = physical_link
 
     #################################################################
 
@@ -27,6 +28,9 @@ class AlertDevice:
 
     def get_device_state(self):
         return self.state
+
+    def get_physical_link(self):
+        return self.physical_link
 
     def get_mute_alert_buzzer_state(self):
         return self.mute_alert_buzzer

@@ -1,0 +1,152 @@
+{
+  "fire-alert-devices": [
+    {
+      "co": [
+        {
+          "feed_id": "smarthomeguard.shg-co",
+          "sensor_id": 2,
+          "kind": 52,
+          "component_id": 0,
+          "processed_data_threshold": 100
+        }
+      ],
+      "fire": [
+        {
+          "feed_id": "smarthomeguard.shg-fire",
+          "sensor_id": 2,
+          "kind": 54,
+          "component_id": 1,
+          "processed_data_threshold": 100
+        }
+      ],
+      "smoke": [
+        {
+          "feed_id": "smarthomeguard.shg-smoke",
+          "sensor_id": 2,
+          "kind": 50,
+          "component_id": 2,
+          "processed_data_threshold": 100
+        }
+      ],
+      "heat": [
+        {
+          "feed_id": "smarthomeguard.shg-heat",
+          "sensor_id": 2,
+          "kind": 51,
+          "component_id": 3,
+          "processed_data_threshold": 100
+        }
+      ],
+      "light": [
+        {
+          "feed_id": "smarthomeguard.shg-fire-alert",
+          "device_id": 2,
+          "kind": 56,
+          "component_id": 4
+        }
+      ],
+      "buzzer": [
+        {
+          "feed_id": "smarthomeguard.shg-fire-alert",
+          "device_id": 2,
+          "kind": 57,
+          "component_id": 5
+        }
+      ],
+      "battery": [
+        {
+          "device_id": 2,
+          "component_id": 6,
+          "rate_capacity": 40
+        }
+      ],
+      "physical_link": [
+        {
+          "port_number": "COM6",
+          "baudrate": 115200
+        }
+      ]
+    },
+    {
+      "lpg": [
+        {
+          "feed_id": "smarthomeguard.shg-lpg",
+          "sensor_id": 1,
+          "kind": 53,
+          "component_id": 7,
+          "processed_data_threshold": 100
+        }
+      ],
+      "light": [
+        {
+          "feed_id": "smarthomeguard.shg-fire-alert",
+          "device_id": 1,
+          "kind": 56,
+          "component_id": 8
+        }
+      ],
+      "buzzer": [
+        {
+          "feed_id": "smarthomeguard.shg-fire-alert",
+          "device_id": 1,
+          "kind": 57,
+          "component_id": 9
+        }
+      ],
+      "battery": [
+        {
+          "device_id": 1,
+          "component_id": 10,
+          "rate_capacity": 80
+        }
+      ],
+      "physical_link": [
+        {
+          "port_number": "COM7",
+          "baudrate": 115200
+        }
+      ]
+    }
+  ],
+  "alert-devices": [
+    {
+      "button": [
+        {
+          "feed_id": "None",
+          "device_id": 3,
+          "kind": 55,
+          "component_id": 11
+        }
+      ],
+      "light": [
+        {
+          "feed_id": "None",
+          "device_id": 3,
+          "kind": 56,
+          "component_id": 12
+        }
+      ],
+      "buzzer": [
+        {
+          "feed_id": "",
+          "device_id": 3,
+          "kind": 57,
+          "component_id": 13
+        }
+      ],
+      "battery": [
+        {
+          "device_id": 3,
+          "component_id": 14,
+          "rate_capacity": 90
+        }
+      ],
+      "physical_link": [
+        {
+          "port_number": "COM8",
+          "baudrate": 115200
+        }
+      ]
+    }
+  ]
+}
